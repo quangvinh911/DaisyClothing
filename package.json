@@ -1,0 +1,20 @@
+{
+  "name": "daisydaily",
+  "version": "1.0.0",
+  "description": "DaisyDaily - Fashion & Lifestyle Blog with Affiliate Marketing",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:server": "cd server && npm run start:dev",
+    "dev:client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

@@ -1,0 +1,64 @@
+// ============================================================
+// Typography
+// ============================================================
+
+@use './variables' as *;
+@use './mixins' as *;
+
+
+
+h1 {
+  @include heading($font-size-3xl);
+  margin-bottom: $space-lg;
+
+  @include respond-to('md') {
+    @include heading($font-size-4xl);
+    margin-bottom: $space-xl;
+  }
+}
+
+h2 {
+  @include heading($font-size-2xl);
+  margin-bottom: $space-md;
+
+  @include respond-to('md') {
+    @include heading($font-size-3xl);
+  }
+}
+
+h3 {
+  @include heading($font-size-xl);
+  margin-bottom: $space-md;
+}
+
+h4 {
+  @include heading($font-size-lg);
+  margin-bottom: $space-sm;
+}
+
+p {
+  @include body-text;
+  margin-bottom: $space-md;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+a {
+  color: $color-gold;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $color-gold-dark;
+  }
+}
+
+strong {
+  font-weight: $font-weight-semibold;
+}
+
+small {
+  font-size: $font-size-sm;
+  color: $color-gray;
+}

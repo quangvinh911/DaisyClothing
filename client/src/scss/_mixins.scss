@@ -1,0 +1,226 @@
+// ============================================================
+// Mixins & Helpers
+// ============================================================
+
+@use './variables' as *;
+
+// ─── Responsive Breakpoints ────────────────────────────────
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == 'sm' {
+    @media (min-width: $breakpoint-sm) { @content; }
+  } @else if $breakpoint == 'md' {
+    @media (min-width: $breakpoint-md) { @content; }
+  } @else if $breakpoint == 'lg' {
+    @media (min-width: $breakpoint-lg) { @content; }
+  } @else if $breakpoint == 'xl' {
+    @media (min-width: $breakpoint-xl) { @content; }
+  } @else if $breakpoint == '2xl' {
+    @media (min-width: $breakpoint-2xl) { @content; }
+  }
+}
+
+@mixin respond-below($breakpoint) {
+  @if $breakpoint == 'sm' {
+    @media (max-width: ($breakpoint-sm - 1px)) { @content; }
+  } @else if $breakpoint == 'md' {
+    @media (max-width: ($breakpoint-md - 1px)) { @content; }
+  } @else if $breakpoint == 'lg' {
+    @media (max-width: ($breakpoint-lg - 1px)) { @content; }
+  }
+}
+
+// ─── Layout ────────────────────────────────────────────────
+@mixin container {
+  width: 100%;
+  max-width: $max-width;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $space-md;
+  padding-right: $space-md;
+
+  @include respond-to('md') {
+    padding-left: $space-xl;
+    padding-right: $space-xl;
+  }
+}
+
+@mixin container-narrow {
+  @include container;
+  max-width: $max-width-narrow;
+}
+
+@mixin container-wide {
+  @include container;
+  max-width: $max-width-wide;
+}
+
+// ─── Flexbox Shortcuts ─────────────────────────────────────
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+// ─── Grid ──────────────────────────────────────────────────
+@mixin grid($columns: 1, $gap: $space-lg) {
+  display: grid;
+  grid-template-columns: repeat($columns, 1fr);
+  gap: $gap;
+}
+
+@mixin responsive-grid($mobile: 1, $tablet: 2, $desktop: 3, $gap: $space-lg) {
+  @include grid($mobile, $gap);
+
+  @include respond-to('md') {
+    grid-template-columns: repeat($tablet, 1fr);
+  }
+
+  @include respond-to('lg') {
+    grid-template-columns: repeat($desktop, 1fr);
+  }
+}
+
+// ─── Typography ────────────────────────────────────────────
+@mixin heading($size: $font-size-2xl) {
+  font-family: $font-heading;
+  font-size: $size;
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  color: $color-charcoal;
+  letter-spacing: -0.01em;
+}
+
+@mixin body-text {
+  font-family: $font-body;
+  font-size: $font-size-base;
+  font-weight: 500;
+  line-height: $line-height-base;
+  color: $color-charcoal;
+}
+
+@mixin caption {
+  font-family: $font-body;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-regular;
+  color: $color-gray;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+// ─── Visual Effects ────────────────────────────────────────
+@mixin glass-effect {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+@mixin card-base {
+  background: $color-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  transition: box-shadow $transition-base, transform $transition-base;
+
+  &:hover {
+    box-shadow: $shadow-card-hover;
+    transform: translateY(-2px);
+  }
+}
+
+@mixin image-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+// ─── Truncation ────────────────────────────────────────────
+@mixin truncate($lines: 1) {
+  @if $lines == 1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// ─── Focus Ring ────────────────────────────────────────────
+@mixin focus-ring {
+  outline: 2px solid $color-gold;
+  outline-offset: 2px;
+}
+
+// ─── Button Base ───────────────────────────────────────────
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-sm;
+  padding: 0.75rem 1.5rem;
+  font-family: $font-body;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all $transition-base;
+  text-decoration: none;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin button-primary {
+  @include button-base;
+  background-color: $color-charcoal;
+  color: $color-white;
+
+  &:hover:not(:disabled) {
+    background-color: $color-dark;
+  }
+}
+
+@mixin button-gold {
+  @include button-base;
+  background-color: $color-gold;
+  color: $color-white;
+
+  &:hover:not(:disabled) {
+    background-color: $color-gold-dark;
+  }
+}
+
+@mixin button-outline {
+  @include button-base;
+  background-color: transparent;
+  color: $color-charcoal;
+  border: 1px solid $color-charcoal;
+
+  &:hover:not(:disabled) {
+    background-color: $color-charcoal;
+    color: $color-white;
+  }
+}

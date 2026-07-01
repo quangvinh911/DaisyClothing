@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Admin Users
+// ============================================================
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  displayName  String   @map("display_name")
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  posts Post[]
+
+  @@map("admin_users")
+}
+
+// ============================================================
+// Categories
+// ============================================================
+model Category {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  imageUrl    String? @map("image_url")
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  posts    Post[]
+  products Product[]
+
+  @@map("categories")
+}
+
+// ============================================================
+// Tags
+// ============================================================
+model Tag {
+  id   String @id @default(uuid())
+  name String @unique
+  slug String @unique
+
+  posts PostTag[]
+
+  @@map("tags")
+}
+
+// ============================================================
+// Posts (Blog Articles)
+// ============================================================
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Post {
+  id               String     @id @default(uuid())
+  title            String
+  slug             String     @unique
+  content          String
+  excerpt          String?
+  featuredImageUrl  String?    @map("featured_image_url")
+  metaTitle        String?    @map("meta_title")
+  metaDescription  String?    @map("meta_description")
+  status           PostStatus @default(DRAFT)
+  publishedAt      DateTime?  @map("published_at")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  categoryId String?   @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  authorId String    @map("author_id")
+  author   AdminUser @relation(fields: [authorId], references: [id])
+
+  tags     PostTag[]
+  products PostProduct[]
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+  @@index([slug])
+  @@map("posts")
+}
+
+// ============================================================
+// Post <-> Tag (Many-to-Many)
+// ============================================================
+model PostTag {
+  postId String @map("post_id")
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  tagId String @map("tag_id")
+  tag   Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
+
+// ============================================================
+// Products (Affiliate Items)
+// ============================================================
+enum Platform {
+  TIKTOK
+  SHOPEE
+  LAZADA
+  AMAZON
+  OTHER
+}
+
+model Product {
+  id             String   @id @default(uuid())
+  name           String
+  slug           String   @unique
+  description    String?
+  imageUrl       String?  @map("image_url")
+  tiktokVideoUrl String?  @map("tiktok_video_url")
+  brand          String?
+  price          Decimal? @db.Decimal(10, 2)
+  currency       String   @default("VND")
+  platform       Platform @default(TIKTOK)
+  affiliateUrl   String   @map("affiliate_url")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  categoryId String?   @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  posts  PostProduct[]
+  clicks AffiliateClick[]
+
+  @@index([isActive])
+  @@index([platform])
+  @@index([slug])
+  @@map("products")
+}
+
+// ============================================================
+// Post <-> Product (Many-to-Many)
+// ============================================================
+model PostProduct {
+  postId       String @map("post_id")
+  post         Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  productId    String @map("product_id")
+  product      Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  displayOrder Int    @default(0) @map("display_order")
+
+  @@id([postId, productId])
+  @@map("post_products")
+}
+
+// ============================================================
+// Affiliate Click Tracking
+// ============================================================
+model AffiliateClick {
+  id          String   @id @default(uuid())
+  productId   String   @map("product_id")
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  referrerUrl String?  @map("referrer_url")
+  utmSource   String?  @map("utm_source")
+  utmMedium   String?  @map("utm_medium")
+  utmCampaign String?  @map("utm_campaign")
+  clickedAt   DateTime @default(now()) @map("clicked_at")
+
+  @@index([productId, clickedAt])
+  @@index([clickedAt])
+  @@map("affiliate_clicks")
+}
+
+// ============================================================
+// Page View Tracking
+// ============================================================
+enum PageType {
+  HOME
+  POST
+  PRODUCT
+  CATEGORY
+  ABOUT
+  SHOP
+  OTHER
+}
+
+model PageView {
+  id          String   @id @default(uuid())
+  pageUrl     String   @map("page_url")
+  pageType    PageType @map("page_type")
+  referenceId String?  @map("reference_id")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  referrerUrl String?  @map("referrer_url")
+  viewedAt    DateTime @default(now()) @map("viewed_at")
+
+  @@index([pageType, viewedAt])
+  @@index([viewedAt])
+  @@map("page_views")
+}
+
+// ============================================================
+// Social Links
+// ============================================================
+model SocialLink {
+  id       String  @id @default(uuid())
+  platform String
+  url      String
+  icon     String?
+  sortOrder Int    @default(0) @map("sort_order")
+  isActive Boolean @default(true) @map("is_active")
+
+  @@map("social_links")
+}
+
+// ============================================================
+// Site Settings (Key-Value)
+// ============================================================
+model SiteSetting {
+  id          String  @id @default(uuid())
+  key         String  @unique
+  value       String
+  description String?
+
+  @@map("site_settings")
+}

@@ -1,0 +1,88 @@
+@use '../../../scss/variables' as *;
+@use '../../../scss/mixins' as *;
+
+.loginPage {
+  min-height: 100vh;
+  @include flex-center;
+  background-color: $color-cream;
+  padding: $space-lg;
+
+  &__card {
+    background-color: $color-white;
+    padding: $space-2xl;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid $color-rose;
+  }
+
+  &__header {
+    text-align: center;
+    margin-bottom: $space-xl;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: $font-size-2xl;
+    color: $color-charcoal;
+    margin-bottom: $space-xs;
+  }
+
+  &__subtitle {
+    font-size: $font-size-sm;
+    color: $color-gray;
+  }
+
+  &__error {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: $space-sm $space-md;
+    border-radius: 4px;
+    font-size: $font-size-sm;
+    margin-bottom: $space-lg;
+    border-left: 4px solid #d32f2f;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $space-lg;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $space-xs;
+  }
+
+  &__label {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-charcoal;
+    text-transform: uppercase;
+  }
+
+  &__input {
+    padding: $space-sm $space-md;
+    border: 1px solid $color-rose;
+    border-radius: 4px;
+    font-size: $font-size-sm;
+    background-color: $color-white;
+    color: $color-charcoal;
+
+    &:focus {
+      outline: none;
+      border-color: $color-gold;
+    }
+  }
+
+  &__submitBtn {
+    @include button-base;
+    @include button-gold;
+    width: 100%;
+    padding: $space-sm;
+    font-size: $font-size-sm;
+    margin-top: $space-md;
+  }
+}

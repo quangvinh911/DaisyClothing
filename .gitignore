@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+dist/
+.angular/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+build/
+coverage/
+*.tsbuildinfo
+
+# Uploads
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Prisma
+server/prisma/*.db
+server/prisma/migrations/
+
+# Logs
+*.log
+npm-debug.log*

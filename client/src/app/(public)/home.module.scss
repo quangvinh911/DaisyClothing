@@ -1,0 +1,511 @@
+@use '../../scss/variables' as *;
+@use '../../scss/mixins' as *;
+
+// ─── Hero Section ──────────────────────────────────────────
+.hero {
+  position: relative;
+  width: 100%;
+  height: 70vh;
+  min-height: 400px;
+  max-height: 700px;
+  overflow: hidden;
+  background: linear-gradient(135deg, $color-blush 0%, $color-rose 100%);
+
+  @include respond-to('md') {
+    height: 80vh;
+    max-height: 800px;
+  }
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba($color-dark, 0.1) 0%,
+      rgba($color-dark, 0.4) 100%
+    );
+    z-index: 1;
+  }
+
+  &__content {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    @include flex-center;
+    @include flex-column;
+    text-align: center;
+    padding: $space-xl;
+  }
+
+  &__tagline {
+    @include caption;
+    color: $color-white;
+    margin-bottom: $space-md;
+    animation: fadeInDown 0.8s ease forwards;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: $font-size-3xl;
+    font-weight: $font-weight-bold;
+    color: $color-white;
+    margin-bottom: $space-md;
+    animation: fadeInUp 0.8s ease 0.2s both;
+
+    @include respond-to('md') {
+      font-size: $font-size-4xl;
+    }
+  }
+
+  &__subtitle {
+    font-size: $font-size-base;
+    color: rgba($color-white, 0.9);
+    max-width: 500px;
+    line-height: $line-height-relaxed;
+    margin-bottom: $space-xl;
+    animation: fadeInUp 0.8s ease 0.4s both;
+
+    @include respond-to('md') {
+      font-size: $font-size-lg;
+    }
+  }
+
+  &__cta {
+    display: flex;
+    gap: $space-md;
+    animation: fadeInUp 0.8s ease 0.6s both;
+  }
+
+  &__btn {
+    @include button-base;
+    padding: 0.875rem 2rem;
+
+    &--primary {
+      background-color: $color-white;
+      color: $color-charcoal;
+
+      &:hover {
+        background-color: $color-gold;
+        color: $color-white;
+      }
+    }
+
+    &--outline {
+      background-color: transparent;
+      color: $color-white;
+      border: 1.5px solid $color-white;
+
+      &:hover {
+        background-color: $color-white;
+        color: $color-charcoal;
+      }
+    }
+  }
+}
+
+// ─── Latest Posts Grid ─────────────────────────────────────
+.latestPosts {
+  padding: $space-3xl 0;
+  background-color: $color-cream;
+
+  @include respond-to('md') {
+    padding: $space-4xl 0;
+  }
+
+  &__container {
+    @include container-wide;
+  }
+
+  &__grid {
+    @include responsive-grid(1, 2, 3, $space-lg);
+  }
+}
+
+// ─── Post Card ─────────────────────────────────────────────
+.postCard {
+  @include card-base;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  &__image {
+    position: relative;
+    width: 100%;
+    padding-top: 66.67%; // 3:2 aspect ratio
+    overflow: hidden;
+    background-color: $color-blush;
+
+    img {
+      position: absolute;
+      inset: 0;
+      @include image-cover;
+      transition: transform $transition-slow;
+    }
+  }
+
+  &:hover &__image img {
+    transform: scale(1.05);
+  }
+
+  &__body {
+    padding: $space-lg;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  &__category {
+    @include caption;
+    color: $color-gold;
+    margin-bottom: $space-sm;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-semibold;
+    color: $color-charcoal;
+    margin-bottom: $space-sm;
+    @include truncate(2);
+    transition: color $transition-fast;
+    line-height: 1.3;
+
+    &:hover {
+      color: $color-gold;
+    }
+  }
+
+  &__excerpt {
+    font-size: $font-size-sm;
+    color: $color-gray;
+    line-height: $line-height-base;
+    @include truncate(3);
+    flex: 1;
+    margin-bottom: $space-md;
+  }
+
+  &__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: $font-size-xs;
+    color: $color-gray-light;
+    padding-top: $space-md;
+    border-top: $border-thin;
+  }
+
+  &__readMore {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-gold;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: $color-gold-dark;
+    }
+  }
+}
+
+// ─── Featured Products ─────────────────────────────────────
+.featuredProducts {
+  padding: $space-3xl 0;
+  background-color: $color-white;
+
+  @include respond-to('md') {
+    padding: $space-4xl 0;
+  }
+
+  &__container {
+    @include container-wide;
+  }
+
+  &__grid {
+    @include responsive-grid(2, 3, 4, $space-md);
+  }
+}
+
+// ─── Product Card ──────────────────────────────────────────
+.productCard {
+  @include card-base;
+  overflow: hidden;
+  text-align: center;
+
+  &__image {
+    position: relative;
+    width: 100%;
+    padding-top: 120%;
+    overflow: hidden;
+    background-color: $color-blush;
+
+    img {
+      position: absolute;
+      inset: 0;
+      @include image-cover;
+      transition: transform $transition-slow;
+    }
+  }
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba($color-dark, 0);
+    @include flex-center;
+    transition: background $transition-base;
+    z-index: 1;
+  }
+
+  &:hover &__overlay {
+    background: rgba($color-dark, 0.3);
+  }
+
+  &__shopBtn {
+    @include button-gold;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all $transition-base;
+    z-index: 2;
+  }
+
+  &:hover &__shopBtn {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &:hover &__image img {
+    transform: scale(1.08);
+  }
+
+  &__body {
+    padding: $space-md;
+  }
+
+  &__brand {
+    @include caption;
+    margin-bottom: $space-xs;
+  }
+
+  &__name {
+    font-family: $font-heading;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $color-charcoal;
+    @include truncate(1);
+    margin-bottom: $space-xs;
+  }
+
+  &__price {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gold;
+  }
+
+  &__platform {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: $color-blush;
+    border-radius: $radius-full;
+    font-size: $font-size-xs;
+    color: $color-gray;
+    margin-top: $space-xs;
+  }
+}
+
+// ─── TikTok Section ────────────────────────────────────────
+.tiktokSection {
+  padding: $space-3xl 0;
+  background: linear-gradient(135deg, $color-blush 0%, $color-cream 100%);
+
+  @include respond-to('md') {
+    padding: $space-4xl 0;
+  }
+
+  &__container {
+    @include container;
+    text-align: center;
+  }
+
+  &__profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $space-md;
+    margin-bottom: $space-2xl;
+  }
+
+  &__avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: $radius-full;
+    overflow: hidden;
+    border: 2px solid $color-gold;
+
+    img {
+      @include image-cover;
+    }
+  }
+
+  &__handle {
+    font-family: $font-heading;
+    font-size: $font-size-xl;
+    color: $color-charcoal;
+  }
+
+  &__followBtn {
+    @include button-primary;
+    margin-top: $space-xl;
+    padding: 0.875rem 2.5rem;
+  }
+
+  &__videoGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $space-lg;
+    margin: $space-2xl auto;
+    max-width: 900px;
+    padding: 0 $space-md;
+
+    @include respond-to('xs') {
+      grid-template-columns: 1fr;
+      max-width: 320px;
+    }
+  }
+
+  &__videoCard {
+    position: relative;
+    border-radius: $radius-md;
+    overflow: hidden;
+    aspect-ratio: 9 / 16;
+    background-color: $color-dark;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: transform $transition-base, box-shadow $transition-base;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform $transition-slow;
+    }
+
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+
+      img {
+        transform: scale(1.05);
+      }
+
+      .tiktokSection__videoOverlay {
+        background: rgba($color-dark, 0.4);
+      }
+    }
+  }
+
+  &__videoOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba($color-dark, 0.25);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: $space-md;
+    transition: background $transition-base;
+  }
+
+  &__playIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: $radius-full;
+    background-color: rgba($color-white, 0.9);
+    color: $color-charcoal;
+    font-size: 16px;
+    margin: auto;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    padding-left: 2px; // Center play triangle visually
+  }
+
+  &__videoViews {
+    font-size: $font-size-xs;
+    color: $color-white;
+    font-weight: $font-weight-semibold;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    text-align: left;
+  }
+}
+
+// ─── Categories Section ────────────────────────────────────
+.categoriesSection {
+  padding: $space-3xl 0;
+  background-color: $color-cream;
+
+  @include respond-to('md') {
+    padding: $space-4xl 0;
+  }
+
+  &__container {
+    @include container-wide;
+  }
+
+  &__grid {
+    @include responsive-grid(2, 3, 4, $space-md);
+  }
+}
+
+.categoryCard {
+  position: relative;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  height: 200px;
+  cursor: pointer;
+
+  @include respond-to('md') {
+    height: 240px;
+  }
+
+  &__image {
+    position: absolute;
+    inset: 0;
+    background-color: $color-rose;
+    transition: transform $transition-slow;
+
+    img {
+      @include image-cover;
+    }
+  }
+
+  &:hover &__image {
+    transform: scale(1.05);
+  }
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba($color-dark, 0.6) 0%,
+      rgba($color-dark, 0.1) 100%
+    );
+    @include flex-center;
+    transition: background $transition-base;
+  }
+
+  &:hover &__overlay {
+    background: linear-gradient(
+      to top,
+      rgba($color-dark, 0.7) 0%,
+      rgba($color-dark, 0.2) 100%
+    );
+  }
+
+  &__name {
+    font-family: $font-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-white;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+}

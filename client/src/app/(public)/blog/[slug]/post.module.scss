@@ -1,0 +1,248 @@
+@use '../../../../scss/variables' as *;
+@use '../../../../scss/mixins' as *;
+
+.postDetail {
+  padding: $space-3xl 0;
+
+  &__back {
+    display: inline-flex;
+    align-items: center;
+    color: $color-gray;
+    font-size: $font-size-sm;
+    margin-bottom: $space-xl;
+    transition: color 0.3s ease;
+
+    &:hover {
+      color: $color-gold;
+    }
+  }
+
+  &__header {
+    margin-bottom: $space-2xl;
+  }
+
+  &__category {
+    @include caption;
+    color: $color-gold;
+    margin-bottom: $space-xs;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+  }
+
+  &__title {
+    @include heading($font-size-3xl);
+    margin-bottom: $space-md;
+
+    @include respond-to('md') {
+      font-size: $font-size-4xl;
+    }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: $space-lg;
+    font-size: $font-size-sm;
+    color: $color-gray;
+    border-bottom: 1px solid $color-rose;
+    padding-bottom: $space-md;
+  }
+
+  &__author {
+    font-weight: $font-weight-semibold;
+    color: $color-charcoal;
+  }
+
+  &__featuredImage {
+    position: relative;
+    width: 100%;
+    height: 450px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: $space-2xl;
+    background-color: $color-blush;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__body {
+    font-size: 1.0625rem;
+    line-height: 1.8;
+    color: $color-charcoal;
+    margin-bottom: $space-3xl;
+
+    p {
+      margin-bottom: $space-lg;
+    }
+
+    h2 {
+      font-family: $font-heading;
+      font-size: $font-size-2xl;
+      color: $color-charcoal;
+      margin-top: $space-2xl;
+      margin-bottom: $space-md;
+    }
+
+    h3 {
+      font-family: $font-heading;
+      font-size: $font-size-xl;
+      color: $color-charcoal;
+      margin-top: $space-xl;
+      margin-bottom: $space-xs;
+    }
+
+    ul, ol {
+      margin-bottom: $space-lg;
+      padding-left: $space-xl;
+    }
+
+    li {
+      margin-bottom: $space-xs;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin: $space-xl 0;
+    }
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space-xs;
+    margin-bottom: $space-3xl;
+    border-bottom: 1px solid $color-rose;
+    padding-bottom: $space-xl;
+  }
+
+  &__tag {
+    font-size: $font-size-xs;
+    color: $color-gray;
+    background-color: $color-blush;
+    padding: $space-xs $space-md;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: $color-gold;
+      color: $color-white;
+    }
+  }
+
+  // Shop My Look / Outfits in this post
+  &__products {
+    margin-top: $space-4xl;
+    background-color: $color-cream;
+    padding: $space-2xl;
+    border-radius: 8px;
+    border: 1px dashed $color-rose;
+  }
+
+  &__productsTitle {
+    font-family: $font-heading;
+    font-size: $font-size-2xl;
+    color: $color-charcoal;
+    text-align: center;
+    margin-bottom: $space-xl;
+  }
+
+  &__productsGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $space-xl;
+
+    @include respond-to('sm') {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include respond-to('lg') {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+}
+
+.productCard {
+  background-color: $color-white;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  border: 1px solid $color-blush;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+  }
+
+  &__image {
+    position: relative;
+    height: 180px;
+    overflow: hidden;
+    background-color: $color-blush;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__body {
+    padding: $space-md;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  &__brand {
+    font-size: $font-size-xs;
+    color: $color-gray;
+    text-transform: uppercase;
+    margin-bottom: $space-xs;
+  }
+
+  &__name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-charcoal;
+    margin-bottom: $space-sm;
+    line-height: 1.4;
+    flex-grow: 1;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+  }
+
+  &__price {
+    font-size: $font-size-sm;
+    color: $color-gold;
+    font-weight: $font-weight-bold;
+  }
+
+  &__buyBtn {
+    background-color: $color-gold;
+    color: $color-white;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    padding: $space-xs $space-md;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: $color-gold-dark;
+    }
+  }
+}

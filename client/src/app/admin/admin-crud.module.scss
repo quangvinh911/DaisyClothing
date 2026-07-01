@@ -1,0 +1,283 @@
+@use '../../scss/variables' as *;
+@use '../../scss/mixins' as *;
+
+.crud {
+  display: flex;
+  flex-direction: column;
+  gap: $space-xl;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: $font-size-xl;
+    color: $color-charcoal;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $space-sm;
+  }
+
+  &__card {
+    background-color: $color-white;
+    padding: $space-xl;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    border: 1px solid $color-rose;
+  }
+
+  // Filters Bar
+  &__filters {
+    display: flex;
+    gap: $space-md;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: $space-lg;
+  }
+
+  &__searchInput {
+    padding: $space-xs $space-md;
+    border: 1px solid $color-rose;
+    border-radius: 4px;
+    font-size: $font-size-sm;
+    background-color: $color-white;
+    width: 250px;
+
+    &:focus {
+      outline: none;
+      border-color: $color-gold;
+    }
+  }
+
+  &__select {
+    padding: $space-xs $space-md;
+    border: 1px solid $color-rose;
+    border-radius: 4px;
+    font-size: $font-size-sm;
+    background-color: $color-white;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+      border-color: $color-gold;
+    }
+  }
+
+  // CRUD Table
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: $space-sm;
+
+    th, td {
+      padding: $space-md;
+      text-align: left;
+      font-size: $font-size-sm;
+      border-bottom: 1px solid $color-blush;
+      vertical-align: middle;
+    }
+
+    th {
+      font-weight: $font-weight-semibold;
+      color: $color-gray;
+      text-transform: uppercase;
+      font-size: $font-size-xs;
+      background-color: #fafaf9;
+    }
+
+    tbody tr:hover {
+      background-color: #fafaf9;
+    }
+  }
+
+  &__statusBadge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+
+    &--published {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    &--draft {
+      background-color: #eceff1;
+      color: #546e7a;
+    }
+
+    &--archived {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+  }
+
+  &__btnEdit {
+    background-color: #e3f2fd;
+    color: #1e88e5;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-right: $space-xs;
+
+    &:hover {
+      background-color: #bbdefb;
+    }
+  }
+
+  &__btnDelete {
+    background-color: #ffebee;
+    color: #e53935;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #ffcdd2;
+    }
+  }
+
+  // Form styles for Create/Edit
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $space-lg;
+  }
+
+  &__formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: $space-xs;
+  }
+
+  &__formRow {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $space-md;
+
+    @include respond-to('md') {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  &__label {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-charcoal;
+    text-transform: uppercase;
+  }
+
+  &__input, &__textarea {
+    padding: $space-sm $space-md;
+    border: 1px solid $color-rose;
+    border-radius: 4px;
+    font-size: $font-size-sm;
+    background-color: $color-white;
+    color: $color-charcoal;
+
+    &:focus {
+      outline: none;
+      border-color: $color-gold;
+    }
+  }
+
+  &__textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  &__formActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $space-md;
+    margin-top: $space-xl;
+    border-top: 1px solid $color-rose;
+    padding-top: $space-lg;
+  }
+
+  // Toggle Switch styles
+  &__switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+
+    input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+
+      &:checked + .crud__slider {
+        background-color: $color-gold;
+      }
+
+      &:focus + .crud__slider {
+        box-shadow: 0 0 1px $color-gold;
+      }
+
+      &:checked + .crud__slider:before {
+        transform: translateX(20px);
+      }
+    }
+  }
+
+  &__slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: $color-gray-light;
+    transition: .4s;
+    border-radius: 24px;
+
+    &:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+  }
+
+  &__btnBulkDelete {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdcd;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: $font-body;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all $transition-fast;
+
+    &:hover {
+      background-color: #ffcdd2;
+    }
+
+    &:disabled {
+      background-color: #f5f5f5;
+      color: #b8b8b8;
+      border-color: #e0e0e0;
+      cursor: not-allowed;
+    }
+  }
+}
