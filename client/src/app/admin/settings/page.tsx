@@ -23,7 +23,8 @@ export default function AdminSettingsPage() {
   const [aboutIntro, setAboutIntro] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
-  const [geminiModel, setGeminiModel] = useState("gemini-2.5-flash");
+  const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
+  const [customModel, setCustomModel] = useState("");
 
   const loadSettings = async () => {
     setLoading(true);
@@ -40,7 +41,16 @@ export default function AdminSettingsPage() {
         setAboutIntro(getVal("about_intro"));
         setContactEmail(getVal("contact_email"));
         setGeminiApiKey(getVal("gemini_api_key"));
-        setGeminiModel(getVal("gemini_model") || "gemini-2.5-flash");
+        
+        const dbModel = getVal("gemini_model") || "gemini-2.5-flash";
+        const standardModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+        if (standardModels.includes(dbModel)) {
+          setSelectedModel(dbModel);
+          setCustomModel("");
+        } else {
+          setSelectedModel("custom");
+          setCustomModel(dbModel);
+        }
       }
     } catch (error) {
       console.error("Failed to load settings:", error);
@@ -73,7 +83,7 @@ export default function AdminSettingsPage() {
         adminApi.updateSetting(token, "about_intro", aboutIntro),
         adminApi.updateSetting(token, "contact_email", contactEmail),
         adminApi.updateSetting(token, "gemini_api_key", geminiApiKey),
-        adminApi.updateSetting(token, "gemini_model", geminiModel),
+        adminApi.updateSetting(token, "gemini_model", selectedModel === "custom" ? customModel : selectedModel),
       ]);
 
       alert("Cập nhật cấu hình website thành công!");
@@ -182,17 +192,38 @@ export default function AdminSettingsPage() {
 
           <div className={styles.crud__formGroup}>
             <label className={styles.crud__label}>Gemini Model (gemini_model)</label>
-            <input
-              type="text"
-              value={geminiModel}
-              onChange={(e) => setGeminiModel(e.target.value)}
-              className={styles.crud__input}
-              placeholder="VD: gemini-2.5-flash, gemini-2.0-flash, hoặc gemini-3.5-flash..."
-            />
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className={styles.crud__select}
+            >
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash (Khuyên dùng)</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+              <option value="custom">Khác (Nhập thủ công)...</option>
+            </select>
             <small style={{ color: "#8a7a6b", marginTop: "4px", display: "block" }}>
-              Tên model AI muốn sử dụng để sinh nội dung. Mặc định là <code>gemini-2.5-flash</code>.
+              Chọn phiên bản model AI sử dụng để sinh bài viết tự động.
             </small>
           </div>
+
+          {selectedModel === "custom" && (
+            <div className={styles.crud__formGroup}>
+              <label className={styles.crud__label}>Nhập tên Model thủ công</label>
+              <input
+                type="text"
+                required
+                value={customModel}
+                onChange={(e) => setCustomModel(e.target.value)}
+                className={styles.crud__input}
+                placeholder="VD: gemini-3.5-flash..."
+              />
+              <small style={{ color: "#8a7a6b", marginTop: "4px", display: "block" }}>
+                Nhập chính xác mã định danh model từ Google AI Studio (ví dụ: <code>gemini-3.5-flash</code>).
+              </small>
+            </div>
+          )}
 
           <div className={styles.crud__formGroup}>
             <label className={styles.crud__label}>Mô tả Website (site_description)</label>
