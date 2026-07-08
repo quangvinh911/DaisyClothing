@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import styles from "./ProductCard.module.scss";
 import { Product } from "@/types";
-import { getAssetUrl, API_BASE } from "@/lib/api";
+import { getAssetUrl, getProductRedirectUrl } from "@/lib/api";
 
 interface ProductCardProps {
   product: Product;
@@ -22,10 +22,21 @@ function getTikTokVideoId(url: string | null | undefined): string | null {
   return null;
 }
 
+function formatNumber(num: number | null | undefined): string {
+  if (!num) return "";
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+  }
+  return num.toString();
+}
+
 export default function ProductCard({ product, index }: ProductCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const imageUrl = getAssetUrl(product.imageUrl);
-  const redirectUrl = `${API_BASE}/products/redirect/${product.slug}`;
+  const redirectUrl = getProductRedirectUrl(product.slug);
   const tiktokVideoId = getTikTokVideoId(product.tiktokVideoUrl);
   const isPhotoPost = product.tiktokVideoUrl?.includes('/photo/');
 
@@ -61,6 +72,16 @@ export default function ProductCard({ product, index }: ProductCardProps) {
     setIsOpen(false);
   };
 
+  const handleCtaClick = () => {
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      (window as any).gtag("event", "product_click", {
+        product_id: product.id,
+        product_name: product.name,
+        platform: product.platform,
+      });
+    }
+  };
+
   return (
     <>
       <div className={styles.productCard} style={{ animationDelay: `${index * 0.08}s` }}>
@@ -75,6 +96,19 @@ export default function ProductCard({ product, index }: ProductCardProps) {
               }}
             />
           )}
+
+          {/* Badges */}
+          {product.isBestSeller && (
+            <span className={`${styles.productCard__badge} ${styles["productCard__badge--best"]}`}>
+              🔥 Bán chạy
+            </span>
+          )}
+          {product.isNew && !product.isBestSeller && (
+            <span className={`${styles.productCard__badge} ${styles["productCard__badge--new"]}`}>
+              🆕 Mới
+            </span>
+          )}
+
           <span className={`${styles.productCard__platform} ${getPlatformClass(product.platform)}`}>
             {product.platform}
           </span>
@@ -103,11 +137,46 @@ export default function ProductCard({ product, index }: ProductCardProps) {
               {product.brand}
             </span>
           )}
-          <Link href={redirectUrl} target="_blank" rel="noopener noreferrer" className={styles.productCard__nameLink}>
+          <Link href={redirectUrl} target="_blank" rel="noopener noreferrer" onClick={handleCtaClick} className={styles.productCard__nameLink}>
             <h3 className={styles.productCard__name}>
               {product.name}
             </h3>
           </Link>
+
+          {/* Price and statistics row */}
+          <div className={styles.productCard__metaRow}>
+            <span className={styles.productCard__price}>
+              {product.price !== null && product.price !== undefined && product.price !== 0
+                ? formatPrice(product.price)
+                : "Liên hệ"}
+            </span>
+
+            {((product.views ?? 0) > 0 || (product.likes ?? 0) > 0) && (
+              <div className={styles.productCard__stats}>
+                {(product.views ?? 0) > 0 && (
+                  <span className={styles.productCard__stat} title={`${product.views} lượt xem`}>
+                    👁️ {formatNumber(product.views)}
+                  </span>
+                )}
+                {(product.likes ?? 0) > 0 && (
+                  <span className={styles.productCard__stat} title={`${product.likes} lượt thích`}>
+                    ❤️ {formatNumber(product.likes)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Full-width CTA button */}
+          <a
+            href={redirectUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleCtaClick}
+            className={styles.productCard__ctaBtn}
+          >
+            Xem Video & Mua ngay 🛍️
+          </a>
         </div>
       </div>
 

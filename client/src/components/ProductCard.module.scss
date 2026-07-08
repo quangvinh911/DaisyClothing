@@ -206,6 +206,86 @@
     overflow: hidden;
     height: 2.8em; // Prevents height layout shift for odd name lengths
   }
+
+  &__badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-family: $font-body;
+    font-size: 9px;
+    font-weight: $font-weight-bold;
+    color: $color-white;
+    padding: 3px 8px;
+    border-radius: $radius-sm;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 2;
+
+    &--best {
+      background-color: #d81b60; // Pink/Rose
+    }
+
+    &--new {
+      background-color: #2e7d32; // Dark Green
+    }
+  }
+
+  &__metaRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 12px;
+  }
+
+  &__price {
+    font-family: $font-body;
+    font-size: 14px;
+    font-weight: $font-weight-bold;
+    color: $color-gold-dark;
+  }
+
+  &__stats {
+    display: flex;
+    gap: 8px;
+  }
+
+  &__stat {
+    font-family: $font-body;
+    font-size: 11px;
+    color: $color-gray-light;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  &__ctaBtn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background-color: $color-gold;
+    color: $color-white;
+    font-family: $font-body;
+    font-size: 12px;
+    font-weight: $font-weight-bold;
+    padding: 10px 16px;
+    border-radius: $radius-sm;
+    text-decoration: none;
+    box-shadow: 0 4px 10px rgba($color-gold, 0.15);
+    transition: all $transition-fast;
+    margin-top: auto;
+
+    &:hover {
+      background-color: $color-gold-dark;
+      transform: scale(1.02);
+      box-shadow: 0 6px 14px rgba($color-gold, 0.25);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
 }
 
 // ─── Modal styling ─────────────────────────────────────────
@@ -242,18 +322,43 @@
   &__closeBtn {
     position: absolute;
     top: 15px;
-    right: 20px;
-    background: transparent;
+    right: 15px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
     border: none;
-    font-size: 32px;
-    line-height: 1;
-    color: $color-charcoal;
+    font-size: 24px;
+    line-height: 36px;
+    color: $color-white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
     z-index: 10;
-    transition: color 0.2s;
+    transition: all 0.2s;
 
     &:hover {
+      background-color: rgba(0, 0, 0, 0.7);
       color: $color-gold;
+    }
+
+    @include respond-to('md') {
+      background: transparent;
+      color: $color-charcoal;
+      font-size: 32px;
+      width: auto;
+      height: auto;
+      border-radius: 0;
+      top: 15px;
+      right: 20px;
+      display: inline;
+      line-height: 1;
+
+      &:hover {
+        color: $color-gold;
+        background: transparent;
+      }
     }
   }
 
@@ -269,21 +374,31 @@
   &__mediaColumn {
     background-color: $color-dark;
     @include flex-center;
-    aspect-ratio: 9 / 16; // Standard TikTok format
-    max-height: 70vh;
+    width: 100%;
     overflow: hidden;
 
     @include respond-to('md') {
       height: 640px;
-      aspect-ratio: auto;
+      width: 420px;
     }
   }
 
-  &__videoWrapper {
+  &__videoWrapper,
+  &__imageWrapper {
     width: 100%;
-    height: 100%;
-    @include flex-center;
+    aspect-ratio: 9 / 16;
+    max-height: 70vh;
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    @include respond-to('md') {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: auto;
+      max-height: none;
+    }
   }
 
   &__iframe {
@@ -291,12 +406,6 @@
     height: 100%;
     border: none;
     background-color: #000;
-  }
-
-  &__imageWrapper {
-    width: 100%;
-    height: 100%;
-    @include flex-center;
   }
 
   &__largeImage {

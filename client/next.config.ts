@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { resolve } from "path";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["daisydaily.shop"],
   sassOptions: {
     includePaths: [resolve(__dirname, "src/scss")],
   },
