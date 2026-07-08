@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import styles from "./dashboard.module.scss";
 import { adminApi } from "@/lib/api";
-import { DashboardStats, TopProduct, ChartDataPoint } from "@/types";
+import { DashboardStats, TopProduct, ChartDataPoint, AffiliateClickDetailsResponse } from "@/types";
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [clickDetails, setClickDetails] = useState<AffiliateClickDetailsResponse>({ clicks: [], countries: [] });
+  const [showClickDetails, setShowClickDetails] = useState(false);
+  const [clickSearch, setClickSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,10 +20,11 @@ export default function AdminDashboardPage() {
       if (!token) return;
 
       try {
-        const [statsRes, prodRes, clicksRes] = await Promise.all([
+        const [statsRes, prodRes, clicksRes, clickDetailsRes] = await Promise.all([
           adminApi.getDashboardStats(token).catch(() => null),
           adminApi.getTopProducts(token, 30).catch(() => []),
           adminApi.getClicksByDay(token, 7).catch(() => []),
+          adminApi.getAffiliateClickDetails(token, 30, 50).catch(() => ({ clicks: [], countries: [] })),
         ]);
 
         if (statsRes) {
@@ -31,6 +35,9 @@ export default function AdminDashboardPage() {
         }
         if (clicksRes) {
           setChartData(clicksRes as ChartDataPoint[]);
+        }
+        if (clickDetailsRes) {
+          setClickDetails(clickDetailsRes as AffiliateClickDetailsResponse);
         }
       } catch (error) {
         console.error("Failed to load admin dashboard data:", error);
@@ -77,6 +84,26 @@ export default function AdminDashboardPage() {
     return i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`;
   }, "");
 
+  const normalizedClickSearch = clickSearch.trim().toLowerCase();
+  const filteredClickDetails = normalizedClickSearch
+    ? clickDetails.clicks.filter((click) => {
+        const searchableText = [
+          click.ipAddress,
+          click.country,
+          click.product.name,
+          click.product.platform,
+          click.referrerUrl,
+          click.utmSource,
+          new Date(click.clickedAt).toLocaleString("vi-VN"),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(normalizedClickSearch);
+      })
+    : clickDetails.clicks;
+
   return (
     <div className={styles.dashboard}>
       {/* Cards stats grid */}
@@ -91,7 +118,11 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className={styles.dashboard__statCard}>
+        <button
+          type="button"
+          className={`${styles.dashboard__statCard} ${styles.dashboard__statCardButton}`}
+          onClick={() => setShowClickDetails((current) => !current)}
+        >
           <span className={styles.dashboard__statLabel}>Click Affiliate</span>
           <span className={styles.dashboard__statValue}>
             {displayStats.affiliateClicks.total}
@@ -99,7 +130,7 @@ export default function AdminDashboardPage() {
           <div className={`${styles.dashboard__statMeta} ${styles["dashboard__statMeta--up"]}`}>
             Hôm nay: <span>{displayStats.affiliateClicks.today}</span>
           </div>
-        </div>
+        </button>
 
         <div className={styles.dashboard__statCard}>
           <span className={styles.dashboard__statLabel}>Nội dung</span>
@@ -111,6 +142,83 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {showClickDetails && (
+        <div className={styles.dashboard__card}>
+          <div className={styles.dashboard__detailsHeader}>
+            <h3 className={styles.dashboard__cardTitle}>Chi tiet IP / quoc gia click affiliate</h3>
+            <button
+              type="button"
+              className={styles.dashboard__closeButton}
+              onClick={() => setShowClickDetails(false)}
+            >
+              Dong
+            </button>
+          </div>
+
+          <div className={styles.dashboard__countryList}>
+            {clickDetails.countries.length === 0 ? (
+              <span>Chua co du lieu quoc gia.</span>
+            ) : (
+              clickDetails.countries.map((item) => (
+                <span key={item.country} className={styles.dashboard__countryPill}>
+                  {item.country}: <strong>{item.clicks}</strong>
+                </span>
+              ))
+            )}
+          </div>
+
+          <div className={styles.dashboard__searchRow}>
+            <input
+              type="search"
+              value={clickSearch}
+              onChange={(event) => setClickSearch(event.target.value)}
+              placeholder="Tim theo IP, quoc gia, san pham, nguon..."
+              className={styles.dashboard__searchInput}
+            />
+            <span className={styles.dashboard__searchCount}>
+              {filteredClickDetails.length}/{clickDetails.clicks.length} clicks
+            </span>
+          </div>
+
+          {clickDetails.clicks.length === 0 ? (
+            <p style={{ color: "#6b6b6b", fontSize: "14px", marginTop: "16px" }}>
+              Chua co luot click affiliate nao duoc ghi nhan.
+            </p>
+          ) : filteredClickDetails.length === 0 ? (
+            <p style={{ color: "#6b6b6b", fontSize: "14px", marginTop: "16px" }}>
+              Khong tim thay click phu hop.
+            </p>
+          ) : (
+            <div className={styles.dashboard__tableWrap}>
+              <table className={styles.dashboard__table}>
+                <thead>
+                  <tr>
+                    <th>Thoi gian</th>
+                    <th>IP</th>
+                    <th>Quoc gia</th>
+                    <th>San pham</th>
+                    <th>Nguon</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredClickDetails.map((click) => (
+                    <tr key={click.id}>
+                      <td style={{ whiteSpace: "nowrap" }}>
+                        {new Date(click.clickedAt).toLocaleString("vi-VN")}
+                      </td>
+                      <td>{click.ipAddress || "-"}</td>
+                      <td>{click.country || "Unknown"}</td>
+                      <td title={click.product.name}>{click.product.name}</td>
+                      <td>{click.utmSource || click.referrerUrl || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className={styles.dashboard__row}>
         {/* SVG Line Graph */}
@@ -195,7 +303,9 @@ export default function AdminDashboardPage() {
                     <td>{prod.platform}</td>
                     <td>
                       <span className={styles.dashboard__clicksBadge}>
-                        {prod.clicks} clicks
+                        <button type="button" onClick={() => setShowClickDetails(true)}>
+                          {prod.clicks} clicks
+                        </button>
                       </span>
                     </td>
                   </tr>

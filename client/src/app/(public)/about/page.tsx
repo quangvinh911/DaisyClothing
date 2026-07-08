@@ -1,6 +1,16 @@
+import { Metadata } from "next";
 import styles from "./about.module.scss";
 import { api } from "@/lib/api";
 import { SiteSetting, SocialLink } from "@/types";
+
+export const metadata: Metadata = {
+  title: "Về DaisyDaily | Chia Sẻ Phong Cách & Đam Mê Thời Trang",
+  description:
+    "Tìm hiểu thêm về DaisyDaily - Hành trình chia sẻ cảm hứng thời trang cá nhân, mẹo phối đồ đẹp mắt, review chân thực và lối sống tràn đầy năng lượng.",
+  alternates: {
+    canonical: "/about",
+  },
+};
 
 export default async function AboutPage() {
   let settings: SiteSetting[] = [];

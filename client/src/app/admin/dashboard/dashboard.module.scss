@@ -28,6 +28,18 @@
     gap: $space-xs;
   }
 
+  &__statCardButton {
+    border: 1px solid $color-rose;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+
+    &:hover {
+      border-color: $color-gold;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+    }
+  }
+
   &__statLabel {
     font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
@@ -82,6 +94,90 @@
     font-size: $font-size-lg;
     color: $color-charcoal;
     margin-bottom: $space-xl;
+  }
+
+  &__detailsHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-md;
+
+    .dashboard__cardTitle {
+      margin-bottom: 0;
+    }
+  }
+
+  &__closeButton {
+    border: 1px solid $color-rose;
+    border-radius: 6px;
+    background: $color-white;
+    color: $color-charcoal;
+    padding: $space-xs $space-md;
+    cursor: pointer;
+    font-size: $font-size-sm;
+
+    &:hover {
+      border-color: $color-gold;
+      color: $color-gold-dark;
+    }
+  }
+
+  &__countryList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space-sm;
+    margin-top: $space-lg;
+  }
+
+  &__countryPill {
+    border: 1px solid $color-rose;
+    border-radius: 20px;
+    padding: 4px 10px;
+    background: #fffaf5;
+    color: $color-charcoal;
+    font-size: $font-size-xs;
+  }
+
+  &__searchRow {
+    display: flex;
+    flex-direction: column;
+    gap: $space-sm;
+    margin-top: $space-lg;
+
+    @include respond-to('sm') {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  &__searchInput {
+    width: 100%;
+    max-width: 440px;
+    min-height: 40px;
+    border: 1px solid $color-rose;
+    border-radius: 6px;
+    padding: 0 $space-md;
+    color: $color-charcoal;
+    background: $color-white;
+    font-size: $font-size-sm;
+
+    &:focus {
+      outline: none;
+      border-color: $color-gold;
+      box-shadow: 0 0 0 3px rgba($color-gold, 0.12);
+    }
+  }
+
+  &__searchCount {
+    color: $color-gray;
+    font-size: $font-size-xs;
+    white-space: nowrap;
+  }
+
+  &__tableWrap {
+    margin-top: $space-lg;
+    overflow-x: auto;
   }
 
   // Custom Chart Style
@@ -152,5 +248,14 @@
     border-radius: 20px;
     font-weight: $font-weight-bold;
     font-size: $font-size-xs;
+
+    button {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      padding: 0;
+    }
   }
 }

@@ -130,6 +130,11 @@ model Product {
   platform       Platform @default(TIKTOK)
   affiliateUrl   String   @map("affiliate_url")
   isActive       Boolean  @default(true) @map("is_active")
+  isFavorite     Boolean  @default(false) @map("is_favorite")
+  isBestSeller   Boolean  @default(false) @map("is_best_seller")
+  isNew          Boolean  @default(false) @map("is_new")
+  views          Int      @default(0)
+  likes          Int      @default(0)
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -140,6 +145,7 @@ model Product {
   clicks AffiliateClick[]
 
   @@index([isActive])
+  @@index([isFavorite])
   @@index([platform])
   @@index([slug])
   @@map("products")
@@ -170,6 +176,7 @@ model AffiliateClick {
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   ipAddress   String?  @map("ip_address")
+  country     String?
   userAgent   String?  @map("user_agent")
   referrerUrl String?  @map("referrer_url")
   utmSource   String?  @map("utm_source")

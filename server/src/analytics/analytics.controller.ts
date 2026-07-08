@@ -58,6 +58,16 @@ export class AnalyticsController {
     return this.analyticsService.getClicksByPlatform(days);
   }
 
+  /** Admin: recent affiliate click details by IP/country */
+  @UseGuards(JwtAuthGuard)
+  @Get('affiliate-click-details')
+  getAffiliateClickDetails(
+    @Query('limit') limit?: number,
+    @Query('days') days?: number,
+  ) {
+    return this.analyticsService.getAffiliateClickDetails(limit, days);
+  }
+
   /** Admin: top referrer sources */
   @UseGuards(JwtAuthGuard)
   @Get('top-referrers')

@@ -1,8 +1,43 @@
+import { Metadata } from "next";
 import Link from "next/link";
 import styles from "./shop.module.scss";
-import { api, getAssetUrl, API_BASE } from "@/lib/api";
+import { api, getAssetUrl, getProductRedirectUrl, SITE_URL } from "@/lib/api";
 import { Product, Category, PaginatedResponse } from "@/types";
 import ProductCard from "@/components/ProductCard";
+import SortSelect from "@/components/SortSelect";
+
+export const metadata: Metadata = {
+  title: "Shop thời trang nữ, outfit xinh và đồ TikTok Shop | DaisyDaily",
+  description:
+    "DaisyDaily Shop tổng hợp outfit xinh, váy đầm, áo, quần và phụ kiện thời trang nữ được chọn lọc từ TikTok Shop, Shopee và Lazada.",
+  alternates: {
+    canonical: `${SITE_URL}/shop`,
+  },
+  openGraph: {
+    type: "website",
+    locale: "vi_VN",
+    url: `${SITE_URL}/shop`,
+    siteName: "DaisyDaily",
+    title: "Shop thời trang nữ, outfit xinh và đồ TikTok Shop | DaisyDaily",
+    description:
+      "Gợi ý outfit xinh, váy đầm, áo, quần và phụ kiện thời trang nữ được DaisyDaily chọn lọc từ TikTok Shop, Shopee và Lazada.",
+    images: [
+      {
+        url: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&h=630&fit=crop",
+        width: 1200,
+        height: 630,
+        alt: "DaisyDaily Shop thời trang nữ",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shop thời trang nữ, outfit xinh và đồ TikTok Shop | DaisyDaily",
+    description:
+      "Gợi ý outfit xinh, váy đầm, áo, quần và phụ kiện thời trang nữ được DaisyDaily chọn lọc.",
+    images: ["https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&h=630&fit=crop"],
+  },
+};
 
 interface ShopPageProps {
   searchParams: Promise<{
@@ -10,6 +45,7 @@ interface ShopPageProps {
     search?: string;
     category?: string;
     platform?: string;
+    sortBy?: string;
   }>;
 }
 
@@ -27,6 +63,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const search = params.search || "";
   const category = params.category || "";
   const platform = params.platform || "";
+  const sortBy = params.sortBy || "latest";
 
   let productsData: PaginatedResponse<Product> = {
     data: [],
@@ -46,6 +83,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     if (search) queryParams.search = search;
     if (category) queryParams.category = category;
     if (platform) queryParams.platform = platform;
+    if (sortBy) queryParams.sortBy = sortBy;
 
     const [prodRes, catRes] = await Promise.all([
       api.getProducts(queryParams).catch(() => null),
@@ -76,6 +114,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     if (catVal) query.set("category", catVal);
     if (platVal) query.set("platform", platVal);
     if (searchVal) query.set("search", searchVal);
+    if (sortBy && sortBy !== "latest") query.set("sortBy", sortBy);
     
     const qStr = query.toString();
     return `/shop${qStr ? `?${qStr}` : ""}`;
@@ -87,6 +126,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     if (search) query.set("search", search);
     if (category) query.set("category", category);
     if (platform) query.set("platform", platform);
+    if (sortBy && sortBy !== "latest") query.set("sortBy", sortBy);
     const queryString = query.toString();
     return `/shop${queryString ? `?${queryString}` : ""}`;
   };
@@ -193,10 +233,13 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
     }
   };
 
+  const shopUrl = `${SITE_URL}/shop`;
+
   // SEO JSON-LD Schema
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
+    "@id": `${shopUrl}#itemlist`,
     "name": "DaisyDaily Shop Items",
     "description": "Danh sách đồ thời trang được DaisyDaily recommend",
     "numberOfItems": products.length,
@@ -206,24 +249,71 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       "item": {
         "@type": "Product",
         "name": product.name,
+        "url": getProductRedirectUrl(product.slug, true),
         "image": product.imageUrl ? getAssetUrl(product.imageUrl) : "",
         "brand": {
           "@type": "Brand",
           "name": product.brand || "DaisyDaily"
         },
-        "offers": {
+        "offers": product.price ? {
           "@type": "Offer",
           "priceCurrency": "VND",
-          "price": product.price || 0,
+          "price": product.price || undefined,
           "availability": "https://schema.org/InStock",
-          "url": `${API_BASE}/products/redirect/${product.slug}`
-        }
+          "url": getProductRedirectUrl(product.slug, true)
+        } : undefined
       }
     }))
   };
 
+  const pageJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#website`,
+        "name": "DaisyDaily",
+        "url": SITE_URL,
+        "inLanguage": "vi-VN",
+      },
+      {
+        "@type": "CollectionPage",
+        "@id": `${shopUrl}#webpage`,
+        "url": shopUrl,
+        "name": "DaisyDaily Shop thời trang nữ",
+        "description": "Danh sách outfit, váy đầm, áo, quần và phụ kiện thời trang nữ được DaisyDaily chọn lọc.",
+        "isPartOf": { "@id": `${SITE_URL}/#website` },
+        "breadcrumb": { "@id": `${shopUrl}#breadcrumb` },
+        "mainEntity": { "@id": `${shopUrl}#itemlist` },
+        "inLanguage": "vi-VN",
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${shopUrl}#breadcrumb`,
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Trang chủ",
+            "item": SITE_URL,
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Shop",
+            "item": shopUrl,
+          },
+        ],
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -231,7 +321,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       <div className={styles.shopPage}>
         <div className="container">
           <header className={styles.shopPage__header}>
-            <h1 className={styles.shopPage__title}>Shop My Looks</h1>
+            <h1 className={styles.shopPage__title}>Shop thời trang nữ DaisyDaily</h1>
             <p className={styles.shopPage__subtitle}>
               Gợi ý các outfits thanh lịch và sản phẩm thời trang yêu thích từ tủ đồ của DaisyDaily 🌸
             </p>
@@ -296,6 +386,9 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
                 </Link>
               </div>
             </div>
+
+            {/* Sort Dropdown */}
+            <SortSelect />
 
             {/* Elegant Search Input */}
             <form action="/shop" method="GET" className={styles.shopPage__searchBar}>

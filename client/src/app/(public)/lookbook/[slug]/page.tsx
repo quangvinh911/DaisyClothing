@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import styles from "./post.module.scss";
-import { api, getAssetUrl, API_BASE } from "@/lib/api";
+import styles from "./lookbook-detail.module.scss";
+import { api, getAssetUrl } from "@/lib/api";
 import { Post } from "@/types";
 import ProductCard from "@/components/ProductCard";
 
-interface PostDetailPageProps {
+interface LookbookDetailPageProps {
   params: Promise<{
     slug: string;
   }>;
@@ -21,15 +21,6 @@ function formatDate(dateStr: string | null): string {
   }).format(new Date(dateStr));
 }
 
-function formatPrice(price: number | null): string {
-  if (price === null) return "Liên hệ";
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price);
-}
-
-// ─── SSG static generation of paths ──────────────────────────
 export async function generateStaticParams() {
   try {
     const slugs = await api.getPostSlugs();
@@ -37,20 +28,19 @@ export async function generateStaticParams() {
       return slugs.map((slug) => ({ slug }));
     }
   } catch (error) {
-    console.error("Failed to generate static params for posts:", error);
+    console.error("Failed to generate static params for lookbooks:", error);
   }
   return [];
 }
 
-// ─── Dynamic SEO Metadata ────────────────────────────────────
 export async function generateMetadata({
   params,
-}: PostDetailPageProps): Promise<Metadata> {
+}: LookbookDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
   try {
     const post = (await api.getPostBySlug(slug)) as Post;
     if (post) {
-      const metaTitle = post.metaTitle || `${post.title} | DaisyDaily`;
+      const metaTitle = post.metaTitle || `${post.title} | Lookbook DaisyDaily`;
       const metaDescription =
         post.metaDescription ||
         post.excerpt ||
@@ -61,7 +51,7 @@ export async function generateMetadata({
         title: metaTitle,
         description: metaDescription,
         alternates: {
-          canonical: post.category?.slug === "outfits" ? `/lookbook/${slug}` : `/blog/${slug}`,
+          canonical: `/lookbook/${slug}`,
         },
         openGraph: {
           title: metaTitle,
@@ -73,15 +63,15 @@ export async function generateMetadata({
       };
     }
   } catch (e) {
-    // Ignore, fallback to default metadata
+    // Ignore
   }
 
   return {
-    title: "Bài viết không tìm thấy",
+    title: "Lookbook không tìm thấy",
   };
 }
 
-export default async function PostDetailPage({ params }: PostDetailPageProps) {
+export default async function LookbookDetailPage({ params }: LookbookDetailPageProps) {
   const { slug } = await params;
 
   let post: Post | null = null;
@@ -91,68 +81,52 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
       post = res as Post;
     }
   } catch (error) {
-    console.error(`Failed to fetch post slug "${slug}":`, error);
+    console.error(`Failed to fetch lookbook for slug "${slug}":`, error);
   }
 
   if (!post) {
     notFound();
   }
 
-  const featuredImgUrl = getAssetUrl(post.featuredImageUrl);
+  const coverImg = getAssetUrl(post.featuredImageUrl);
 
   return (
-    <div className={styles.postDetail}>
+    <div className={styles.lookbookDetail}>
       <div className="container container--narrow">
-        <Link href="/blog" className={styles.postDetail__back}>
-          &larr; Quay lại Blog
+        <Link href="/lookbook" className={styles.lookbookDetail__back}>
+          &larr; Quay lại danh sách Lookbook
         </Link>
 
-        <header className={styles.postDetail__header}>
-          {post.category && (
-            <span className={styles.postDetail__category}>
-              {post.category.name}
-            </span>
-          )}
-          <h1 className={styles.postDetail__title}>{post.title}</h1>
-          <div className={styles.postDetail__meta}>
-            <span className={styles.postDetail__author}>
+        <header className={styles.lookbookDetail__header}>
+          <span className={styles.lookbookDetail__tagline}>DaisyDaily Outfit Idea</span>
+          <h1 className={styles.lookbookDetail__title}>{post.title}</h1>
+          <div className={styles.lookbookDetail__meta}>
+            <span className={styles.lookbookDetail__author}>
               Bởi {post.author?.displayName || "DaisyDaily"}
             </span>
             <time>{formatDate(post.publishedAt)}</time>
           </div>
         </header>
 
-        {featuredImgUrl && (
-          <div className={styles.postDetail__featuredImage}>
-            <img src={featuredImgUrl} alt={post.title} />
+        {coverImg && (
+          <div className={styles.lookbookDetail__cover}>
+            <img src={coverImg} alt={post.title} />
           </div>
         )}
 
-        {/* Content (HTML rendered safely from DB) */}
         <article
-          className={styles.postDetail__body}
+          className={styles.lookbookDetail__body}
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
-        {post.tags && post.tags.length > 0 && (
-          <div className={styles.postDetail__tags}>
-            {post.tags.map(({ tag }) => (
-              <Link
-                key={tag.id}
-                href={`/blog?tag=${tag.slug}`}
-                className={styles.postDetail__tag}
-              >
-                #{tag.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* ─── Shop My Look / Featured Products in Post ───────── */}
+        {/* ─── Shop the Look Products ────────────────────────── */}
         {post.products && post.products.length > 0 && (
-          <div className={styles.postDetail__products}>
-            <h2 className={styles.postDetail__productsTitle}>Shop My Look 🌸</h2>
-            <div className={styles.postDetail__productsGrid}>
+          <div className={styles.lookbookDetail__productsSection}>
+            <h2 className={styles.lookbookDetail__productsTitle}>Danh sách sản phẩm trong Outfit 🛍️</h2>
+            <p className={styles.lookbookDetail__productsSubtitle}>
+              Bấm vào từng sản phẩm dưới đây để xem video review chi tiết mặc thử sản phẩm và đặt mua!
+            </p>
+            <div className={styles.lookbookDetail__productsGrid}>
               {post.products.map(({ product }, index) => (
                 <ProductCard key={product.id} product={product} index={index} />
               ))}
@@ -168,7 +142,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
               "@context": "https://schema.org",
               "@type": "BlogPosting",
               "headline": post.title,
-              "image": featuredImgUrl ? [featuredImgUrl] : [],
+              "image": coverImg ? [coverImg] : [],
               "datePublished": post.publishedAt || post.createdAt,
               "dateModified": post.updatedAt,
               "author": [

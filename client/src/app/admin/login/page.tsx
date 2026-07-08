@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
       if (response && response.accessToken) {
         localStorage.setItem("admin_token", response.accessToken);
         localStorage.setItem("admin_user", JSON.stringify(response.user));
-        router.push("/admin/dashboard");
+        window.location.replace("/admin/dashboard");
       } else {
         setError("Không nhận được token từ server");
       }

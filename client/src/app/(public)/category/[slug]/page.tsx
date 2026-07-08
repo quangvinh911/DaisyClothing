@@ -1,8 +1,34 @@
+import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import styles from "../../blog/blog.module.scss";
 import { api, getAssetUrl } from "@/lib/api";
 import { Post, Category, PaginatedResponse } from "@/types";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const category = (await api.getCategoryBySlug(slug)) as Category;
+    if (category) {
+      return {
+        title: `Thời trang ${category.name}`,
+        description: `Khám phá các bài viết, sản phẩm và chia sẻ về phong cách thuộc danh mục ${category.name} trên DaisyDaily.`,
+        alternates: {
+          canonical: `/category/${slug}`,
+        },
+      };
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return {
+    title: "Danh mục không tìm thấy",
+  };
+}
 
 interface CategoryPageProps {
   params: Promise<{

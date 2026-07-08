@@ -1,9 +1,19 @@
+import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./home.module.scss";
 import { api, getAssetUrl, API_BASE } from "@/lib/api";
 import { Post, Product, Category } from "@/types";
 import ProductCard from "@/components/ProductCard";
+
+export const metadata: Metadata = {
+  title: "DaisyDaily | Blog Thời Trang Nữ, Tips Phối Đồ & Lifestyle",
+  description:
+    "Chào mừng bạn đến với DaisyDaily — Blog thời trang & lifestyle cá nhân. Nơi chia sẻ các phong cách phối đồ thời trang hàng ngày, review quần áo xu hướng mới nhất và gợi ý mua sắm thông minh.",
+  alternates: {
+    canonical: "/",
+  },
+};
 
 // Fallbacks in case API fails or has no data
 const FALLBACK_POSTS: Partial<Post>[] = [
@@ -379,6 +389,40 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* JSON-LD Structured Data for Homepage & Organization/Person */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "DaisyDaily",
+            "url": "https://daisydaily.shop",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://daisydaily.shop/blog?search={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          })
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Person",
+            "name": "DaisyDaily",
+            "url": "https://daisydaily.shop",
+            "sameAs": [
+              "https://www.tiktok.com/@em.xinh0905"
+            ],
+            "jobTitle": "Fashion & Lifestyle Blogger",
+            "description": "Blog thời trang & lifestyle cá nhân — chia sẻ phong cách, tips phối đồ và gợi ý mua sắm mỗi ngày 🌸"
+          })
+        }}
+      />
     </>
   );
 }

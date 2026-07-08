@@ -163,6 +163,52 @@ export class AnalyticsService {
     }));
   }
 
+  /** Recent affiliate click details grouped with Cloudflare country data */
+  async getAffiliateClickDetails(limit: any = 50, days: any = 30) {
+    const parsedLimit = isNaN(Number(limit)) || Number(limit) <= 0 ? 50 : Math.min(Number(limit), 200);
+    const parsedDays = isNaN(Number(days)) || Number(days) <= 0 ? 30 : Number(days);
+
+    const since = new Date();
+    since.setDate(since.getDate() - parsedDays);
+
+    const clicks = await this.prisma.affiliateClick.findMany({
+      where: { clickedAt: { gte: since } },
+      orderBy: { clickedAt: 'desc' },
+      take: parsedLimit,
+      select: {
+        id: true,
+        ipAddress: true,
+        country: true,
+        referrerUrl: true,
+        utmSource: true,
+        clickedAt: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            platform: true,
+          },
+        },
+      },
+    });
+
+    const countryMap = new Map<string, number>();
+    for (const click of clicks) {
+      const country = click.country || 'Unknown';
+      countryMap.set(country, (countryMap.get(country) || 0) + 1);
+    }
+
+    const countries = Array.from(countryMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([country, clicks]) => ({ country, clicks }));
+
+    return {
+      clicks,
+      countries,
+    };
+  }
+
   /** Top referrer sources */
   async getTopReferrers(limit: number = 10, days: number = 30) {
     const since = new Date();

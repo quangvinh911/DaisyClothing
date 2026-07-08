@@ -15,6 +15,17 @@ export class ProductsController {
     private readonly prisma: PrismaService,
   ) {}
 
+  private getHeaderValue(value: string | string[] | undefined): string | null {
+    if (Array.isArray(value)) return value[0] || null;
+    return value || null;
+  }
+
+  private getClientIp(req: Request): string | null {
+    const cloudflareIp = this.getHeaderValue(req.headers['cf-connecting-ip']);
+    const forwardedFor = this.getHeaderValue(req.headers['x-forwarded-for']);
+    return cloudflareIp || forwardedFor?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress || null;
+  }
+
   // ─── Public Endpoints ────────────────────────────────────
 
   /** Public: list active products */
@@ -61,7 +72,8 @@ export class ProductsController {
       this.prisma.affiliateClick.create({
         data: {
           productId: product.id,
-          ipAddress: req.ip || req.socket.remoteAddress || null,
+          ipAddress: this.getClientIp(req),
+          country: this.getHeaderValue(req.headers['cf-ipcountry']),
           userAgent: req.headers['user-agent'] || null,
           referrerUrl: req.headers['referer'] || null,
           utmSource: utmSource || null,

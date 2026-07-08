@@ -35,6 +35,11 @@ export interface Product {
   platform: 'TIKTOK' | 'SHOPEE' | 'LAZADA' | 'AMAZON' | 'OTHER';
   affiliateUrl: string;
   tiktokVideoUrl?: string | null;
+  isFavorite: boolean;
+  isBestSeller: boolean;
+  isNew: boolean;
+  views: number;
+  likes: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -107,6 +112,26 @@ export interface TopProduct {
   imageUrl: string | null;
   platform: string;
   clicks: number;
+}
+
+export interface AffiliateClickDetail {
+  id: string;
+  ipAddress: string | null;
+  country: string | null;
+  referrerUrl: string | null;
+  utmSource: string | null;
+  clickedAt: string;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    platform: string;
+  };
+}
+
+export interface AffiliateClickDetailsResponse {
+  clicks: AffiliateClickDetail[];
+  countries: Array<{ country: string; clicks: number }>;
 }
 
 export interface PlatformClicks {

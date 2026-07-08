@@ -1,7 +1,17 @@
+import { Metadata } from "next";
 import Link from "next/link";
 import styles from "./blog.module.scss";
 import { api, getAssetUrl } from "@/lib/api";
 import { Post, PaginatedResponse } from "@/types";
+
+export const metadata: Metadata = {
+  title: "Blog thời trang & Phối đồ",
+  description:
+    "Tổng hợp các bài viết chia sẻ phong cách thời trang, tips phối đồ, và review sản phẩm mới nhất từ DaisyDaily.",
+  alternates: {
+    canonical: "/blog",
+  },
+};
 
 interface BlogPageProps {
   searchParams: Promise<{

@@ -15,14 +15,14 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<any>(null);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (targetPage = page) => {
     const token = localStorage.getItem("admin_token");
     if (!token) return;
 
     setLoading(true);
     try {
       const queryParams: Record<string, string> = {
-        page: page.toString(),
+        page: targetPage.toString(),
         limit: "10",
       };
       if (search) queryParams.search = search;
@@ -81,6 +81,37 @@ export default function AdminProductsPage() {
       );
     } catch (error: any) {
       alert(error.message || "Cập nhật trạng thái thất bại");
+    }
+  };
+
+  const handleToggleFavorite = async (id: string, currentIsFavorite: boolean) => {
+    const token = localStorage.getItem("admin_token");
+    if (!token) return;
+
+    const nextIsFavorite = !currentIsFavorite;
+
+    try {
+      await adminApi.updateProduct(token, id, { isFavorite: nextIsFavorite });
+
+      setProducts((prev) =>
+        prev
+          .map((p) => (p.id === id ? { ...p, isFavorite: nextIsFavorite } : p))
+          .sort((a, b) => {
+            if (a.isFavorite !== b.isFavorite) {
+              return Number(b.isFavorite) - Number(a.isFavorite);
+            }
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          })
+      );
+
+      if (nextIsFavorite && page !== 1) {
+        setPage(1);
+        fetchProducts(1);
+      } else {
+        fetchProducts(page);
+      }
+    } catch (error: any) {
+      alert(error.message || "Cáº­p nháº­t sáº£n pháº©m yÃªu thÃ­ch tháº¥t báº¡i");
     }
   };
 
@@ -195,6 +226,7 @@ export default function AdminProductsPage() {
                       style={{ cursor: "pointer" }}
                     />
                   </th>
+                  <th style={{ width: "72px", textAlign: "center" }}>Y&ecirc;u th&iacute;ch</th>
                   <th>Hình ảnh</th>
                   <th>Tên sản phẩm</th>
                   <th>Thương hiệu</th>
@@ -219,6 +251,30 @@ export default function AdminProductsPage() {
                           onChange={(e) => handleSelectOne(prod.id, e.target.checked)}
                           style={{ cursor: "pointer" }}
                         />
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleFavorite(prod.id, prod.isFavorite)}
+                          aria-label={prod.isFavorite ? "Bo yeu thich" : "Danh dau yeu thich"}
+                          title={prod.isFavorite ? "Bo yeu thich" : "Danh dau yeu thich"}
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            border: prod.isFavorite ? "1px solid #c4956a" : "1px solid #e2d6ca",
+                            borderRadius: "6px",
+                            backgroundColor: prod.isFavorite ? "#fff7e6" : "#fff",
+                            color: prod.isFavorite ? "#c4956a" : "#9b9188",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "18px",
+                            lineHeight: 1,
+                          }}
+                        >
+                          {prod.isFavorite ? "★" : "☆"}
+                        </button>
                       </td>
                       <td>
                         {imgUrl ? (

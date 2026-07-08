@@ -9,6 +9,14 @@ import { PaginatedResponse } from '../common/dto/pagination.dto';
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private getTikTokHeaders(): Record<string, string> {
+    return {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
+    };
+  }
+
   /** Public: list active products with filters */
   async findActive(query: ProductQueryDto): Promise<PaginatedResponse<unknown>> {
     const page = Number(query.page) || 1;
@@ -34,6 +42,17 @@ export class ProductsService {
       where.platform = query.platform;
     }
 
+    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+    if (query.sortBy === 'best_seller') {
+      orderBy = { views: 'desc' };
+    } else if (query.sortBy === 'price_asc') {
+      orderBy = { price: 'asc' };
+    } else if (query.sortBy === 'price_desc') {
+      orderBy = { price: 'desc' };
+    } else if (query.sortBy === 'latest') {
+      orderBy = { createdAt: 'desc' };
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
@@ -41,7 +60,7 @@ export class ProductsService {
           category: true,
           _count: { select: { clicks: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: limit,
       }),
@@ -128,7 +147,10 @@ export class ProductsService {
           category: true,
           _count: { select: { clicks: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { isFavorite: 'desc' },
+          { createdAt: 'desc' },
+        ],
         skip,
         take: limit,
       }),
@@ -173,9 +195,7 @@ export class ProductsService {
       const response = await fetch(url, {
         method: 'HEAD',
         redirect: 'follow',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+        headers: this.getTikTokHeaders(),
       });
       return response.url;
     } catch (error) {
@@ -184,26 +204,61 @@ export class ProductsService {
     }
   }
 
-  private async fetchTikTokThumbnail(videoUrl: string): Promise<string | null> {
+  private normalizeTikTokOEmbedUrl(videoUrl: string): string {
+    return videoUrl.includes('/photo/')
+      ? videoUrl.replace('/photo/', '/video/')
+      : videoUrl;
+  }
+
+  private async fetchTikTokOEmbed(videoUrl: string): Promise<{
+    title?: string;
+    author_name?: string;
+    thumbnail_url?: string;
+  } | null> {
     if (!videoUrl) return null;
     try {
-      const targetUrl = videoUrl.includes('/photo/') 
-        ? videoUrl.replace('/photo/', '/video/') 
-        : videoUrl;
+      const targetUrl = this.normalizeTikTokOEmbedUrl(videoUrl);
       const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(targetUrl)}`;
       const res = await fetch(oembedUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
+        headers: this.getTikTokHeaders(),
       });
       if (res.ok) {
-        const json = (await res.json()) as { thumbnail_url?: string };
-        return json.thumbnail_url || null;
+        return (await res.json()) as {
+          title?: string;
+          author_name?: string;
+          thumbnail_url?: string;
+        };
       }
     } catch (error) {
-      console.error('Failed to fetch TikTok oEmbed thumbnail:', error);
+      console.error('Failed to fetch TikTok oEmbed data:', error);
     }
     return null;
+  }
+
+  private async fetchTikTokThumbnail(videoUrl: string): Promise<string | null> {
+    const oembed = await this.fetchTikTokOEmbed(videoUrl);
+    return oembed?.thumbnail_url || null;
+  }
+
+  private shouldRefreshTikTokThumbnail(imageUrl?: string | null): boolean {
+    if (!imageUrl) return true;
+
+    if (!imageUrl.includes('tiktokcdn.com')) {
+      return false;
+    }
+
+    const refreshWindowSeconds = 24 * 60 * 60;
+    const nowSeconds = Math.floor(Date.now() / 1000);
+
+    try {
+      const parsed = new URL(imageUrl);
+      const expires = Number(parsed.searchParams.get('x-expires'));
+      return Number.isFinite(expires) && expires <= nowSeconds + refreshWindowSeconds;
+    } catch {
+      const expiresMatch = imageUrl.match(/[?&]x-expires=(\d+)/);
+      const expires = expiresMatch ? Number(expiresMatch[1]) : NaN;
+      return Number.isFinite(expires) && expires <= nowSeconds + refreshWindowSeconds;
+    }
   }
 
   /** Admin: create product */
@@ -238,6 +293,11 @@ export class ProductsService {
         platform: dto.platform,
         affiliateUrl: dto.affiliateUrl,
         isActive: dto.isActive ?? true,
+        isFavorite: dto.isFavorite ?? false,
+        isBestSeller: dto.isBestSeller ?? false,
+        isNew: dto.isNew ?? false,
+        views: dto.views ?? 0,
+        likes: dto.likes ?? 0,
         categoryId: dto.categoryId,
       },
       include: {
@@ -291,6 +351,11 @@ export class ProductsService {
         ...(dto.platform && { platform: dto.platform }),
         ...(dto.affiliateUrl && { affiliateUrl: dto.affiliateUrl }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.isFavorite !== undefined && { isFavorite: dto.isFavorite }),
+        ...(dto.isBestSeller !== undefined && { isBestSeller: dto.isBestSeller }),
+        ...(dto.isNew !== undefined && { isNew: dto.isNew }),
+        ...(dto.views !== undefined && { views: dto.views }),
+        ...(dto.likes !== undefined && { likes: dto.likes }),
         ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
       },
       include: { category: true },
@@ -329,9 +394,8 @@ export class ProductsService {
       try {
         const response = await fetch(resolvedProfileUrl, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            ...this.getTikTokHeaders(),
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
           }
         });
         const html = await response.text();
@@ -409,32 +473,34 @@ export class ProductsService {
           where: { tiktokVideoUrl: { contains: videoId } }
         });
         if (existing) {
-          createdProducts.push(existing);
+          if (this.shouldRefreshTikTokThumbnail(existing.imageUrl)) {
+            const refreshedThumbnail = await this.fetchTikTokThumbnail(fullUrl);
+            if (refreshedThumbnail && refreshedThumbnail !== existing.imageUrl) {
+              const refreshedProduct = await this.prisma.product.update({
+                where: { id: existing.id },
+                data: { imageUrl: refreshedThumbnail },
+                include: { category: true },
+              });
+              createdProducts.push(refreshedProduct);
+            } else {
+              createdProducts.push(existing);
+            }
+          } else {
+            createdProducts.push(existing);
+          }
           continue;
         }
 
         // Fetch oEmbed details from TikTok (using /video/ URL structure even for photo slide posts)
-        const oembedRequestUrl = fullUrl.includes('/photo/') 
-          ? fullUrl.replace('/photo/', '/video/') 
-          : fullUrl;
-
-        const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(oembedRequestUrl)}`;
-        const res = await fetch(oembedUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
-        });
+        const oembedData = await this.fetchTikTokOEmbed(fullUrl);
         let title = `Sản phẩm review #${videoId}`;
         let imageUrl = '';
         let brand = '';
 
-        if (res.ok) {
-          const oembedData = await res.json() as any;
-          if (oembedData) {
-            title = oembedData.title || title;
-            imageUrl = oembedData.thumbnail_url || '';
-            brand = oembedData.author_name || '';
-          }
+        if (oembedData) {
+          title = oembedData.title || title;
+          imageUrl = oembedData.thumbnail_url || '';
+          brand = oembedData.author_name || '';
         }
 
         let cleanedName = title.trim();

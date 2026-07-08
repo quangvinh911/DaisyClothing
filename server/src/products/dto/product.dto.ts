@@ -49,6 +49,28 @@ export class CreateProductDto {
   isActive?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  isFavorite?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isBestSeller?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isNew?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  views?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  likes?: number;
+
+  @IsOptional()
   @IsUUID()
   categoryId?: string;
 }
@@ -100,6 +122,28 @@ export class UpdateProductDto {
   isActive?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  isFavorite?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isBestSeller?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isNew?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  views?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  likes?: number;
+
+  @IsOptional()
   @IsUUID()
   categoryId?: string;
 }
@@ -120,6 +164,10 @@ export class ProductQueryDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
 
   @IsOptional()
   @Type(() => Number)

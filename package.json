@@ -12,7 +12,8 @@
     "dev:client": "cd client && npm run dev",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "build": "npm run build --workspaces",
-    "lint": "npm run lint --workspaces"
+    "lint": "npm run lint --workspaces",
+    "start": "concurrently \"cd server && npm run start:prod\" \"cd client && npm run start\""
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
