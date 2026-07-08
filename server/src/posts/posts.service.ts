@@ -333,6 +333,8 @@ export class PostsService {
       throw new ConflictException('Vui lòng cấu hình Gemini API Key trước trong phần Cấu hình.');
     }
 
+    const model = await this.settingsService.getValueByKey('gemini_model', 'gemini-2.5-flash');
+
     let scrapedData = { text: '', images: [] as string[] };
     if (url) {
       scrapedData = await this.scrapeUrl(url);
@@ -391,7 +393,7 @@ Trả về một đối tượng JSON khớp chính xác với cấu trúc sau:
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

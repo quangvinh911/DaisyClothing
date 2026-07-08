@@ -23,6 +23,7 @@ export default function AdminSettingsPage() {
   const [aboutIntro, setAboutIntro] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [geminiModel, setGeminiModel] = useState("gemini-2.5-flash");
 
   const loadSettings = async () => {
     setLoading(true);
@@ -39,6 +40,7 @@ export default function AdminSettingsPage() {
         setAboutIntro(getVal("about_intro"));
         setContactEmail(getVal("contact_email"));
         setGeminiApiKey(getVal("gemini_api_key"));
+        setGeminiModel(getVal("gemini_model") || "gemini-2.5-flash");
       }
     } catch (error) {
       console.error("Failed to load settings:", error);
@@ -71,6 +73,7 @@ export default function AdminSettingsPage() {
         adminApi.updateSetting(token, "about_intro", aboutIntro),
         adminApi.updateSetting(token, "contact_email", contactEmail),
         adminApi.updateSetting(token, "gemini_api_key", geminiApiKey),
+        adminApi.updateSetting(token, "gemini_model", geminiModel),
       ]);
 
       alert("Cập nhật cấu hình website thành công!");
@@ -174,6 +177,20 @@ export default function AdminSettingsPage() {
               >
                 Google AI Studio
               </a>
+            </small>
+          </div>
+
+          <div className={styles.crud__formGroup}>
+            <label className={styles.crud__label}>Gemini Model (gemini_model)</label>
+            <input
+              type="text"
+              value={geminiModel}
+              onChange={(e) => setGeminiModel(e.target.value)}
+              className={styles.crud__input}
+              placeholder="VD: gemini-2.5-flash, gemini-2.0-flash, hoặc gemini-3.5-flash..."
+            />
+            <small style={{ color: "#8a7a6b", marginTop: "4px", display: "block" }}>
+              Tên model AI muốn sử dụng để sinh nội dung. Mặc định là <code>gemini-2.5-flash</code>.
             </small>
           </div>
 
