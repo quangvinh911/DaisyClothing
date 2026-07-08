@@ -22,6 +22,7 @@ export default function AdminSettingsPage() {
   const [siteDescription, setSiteDescription] = useState("");
   const [aboutIntro, setAboutIntro] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [geminiApiKey, setGeminiApiKey] = useState("");
 
   const loadSettings = async () => {
     setLoading(true);
@@ -37,6 +38,7 @@ export default function AdminSettingsPage() {
         setSiteDescription(getVal("site_description"));
         setAboutIntro(getVal("about_intro"));
         setContactEmail(getVal("contact_email"));
+        setGeminiApiKey(getVal("gemini_api_key"));
       }
     } catch (error) {
       console.error("Failed to load settings:", error);
@@ -51,6 +53,10 @@ export default function AdminSettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (settings.length === 0) {
+      alert("Không thể lưu cấu hình vì dữ liệu chưa được tải thành công từ máy chủ. Vui lòng tải lại trang.");
+      return;
+    }
     setSaving(true);
 
     const token = localStorage.getItem("admin_token");
@@ -64,6 +70,7 @@ export default function AdminSettingsPage() {
         adminApi.updateSetting(token, "site_description", siteDescription),
         adminApi.updateSetting(token, "about_intro", aboutIntro),
         adminApi.updateSetting(token, "contact_email", contactEmail),
+        adminApi.updateSetting(token, "gemini_api_key", geminiApiKey),
       ]);
 
       alert("Cập nhật cấu hình website thành công!");
@@ -146,6 +153,28 @@ export default function AdminSettingsPage() {
               onChange={(e) => setContactEmail(e.target.value)}
               className={styles.crud__input}
             />
+          </div>
+          
+          <div className={styles.crud__formGroup}>
+            <label className={styles.crud__label}>Gemini API Key (gemini_api_key)</label>
+            <input
+              type="password"
+              value={geminiApiKey}
+              onChange={(e) => setGeminiApiKey(e.target.value)}
+              className={styles.crud__input}
+              placeholder="Nhập Gemini API Key từ Google AI Studio..."
+            />
+            <small style={{ color: "#8a7a6b", marginTop: "4px", display: "block" }}>
+              Dùng để tự động tạo nội dung bài viết bằng AI. Lấy API key miễn phí tại{" "}
+              <a
+                href="https://aistudio.google.com/"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: "#c5a880", textDecoration: "underline" }}
+              >
+                Google AI Studio
+              </a>
+            </small>
           </div>
 
           <div className={styles.crud__formGroup}>

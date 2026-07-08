@@ -52,6 +52,15 @@ export class PostsController {
     return this.postsService.findById(id);
   }
 
+  /** Admin: generate post content using AI */
+  @UseGuards(JwtAuthGuard)
+  @Post('generate-ai')
+  generateAi(
+    @Body() body: { prompt?: string; url?: string },
+  ) {
+    return this.postsService.generateAiPost(body.prompt, body.url);
+  }
+
   /** Admin: create post */
   @UseGuards(JwtAuthGuard)
   @Post()

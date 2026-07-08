@@ -1,9 +1,27 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const getApiBase = () => {
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/api`;
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+};
+
+export const API_BASE = getApiBase();
+
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+export const SITE_URL =
+  configuredSiteUrl && !configuredSiteUrl.includes("localhost")
+    ? configuredSiteUrl.replace(/\/$/, "")
+    : "https://daisydaily.shop";
+
+export const getProductRedirectUrl = (slug: string, absolute = false) => {
+  const path = `/api/products/redirect/${slug}`;
+  return absolute ? `${SITE_URL}${path}` : path;
+};
 
 export const getAssetUrl = (path?: string | null) => {
-  if (!path) return '';
-  if (path.startsWith('http')) return path;
-  const root = API_BASE.replace(/\/api$/, '');
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  const root = API_BASE.replace(/\/api$/, "");
   return `${root}${path}`;
 };
 
@@ -148,6 +166,14 @@ export const adminApi = {
   deletePost: (token: string, id: string) =>
     fetchApi(`/posts/${id}`, { method: 'DELETE', token, cache: 'no-store' }),
 
+  generateAiPost: (token: string, data: { prompt?: string; url?: string }) =>
+    fetchApi<any>('/posts/generate-ai', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      token,
+      cache: 'no-store',
+    }),
+
   // Products
   getProducts: (token: string, params?: Record<string, string>) => {
     const query = params ? `?${new URLSearchParams(params)}` : '';
@@ -224,6 +250,9 @@ export const adminApi = {
 
   getClicksByPlatform: (token: string, days: number = 30) =>
     fetchApi(`/analytics/clicks-by-platform?days=${days}`, { token, cache: 'no-store' }),
+
+  getAffiliateClickDetails: (token: string, days: number = 30, limit: number = 50) =>
+    fetchApi(`/analytics/affiliate-click-details?days=${days}&limit=${limit}`, { token, cache: 'no-store' }),
 
   getTopReferrers: (token: string, days: number = 30) =>
     fetchApi(`/analytics/top-referrers?days=${days}`, { token, cache: 'no-store' }),

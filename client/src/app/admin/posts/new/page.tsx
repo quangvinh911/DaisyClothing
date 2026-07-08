@@ -23,6 +23,12 @@ export default function AdminNewPostPage() {
   const [categoryId, setCategoryId] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
+  // AI Assistant fields
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiUrl, setAiUrl] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(false);
+
   // Selection list data
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -98,6 +104,47 @@ export default function AdminNewPostPage() {
     }
   };
 
+  const handleGenerateAi = async () => {
+    const token = localStorage.getItem("admin_token");
+    if (!token) {
+      alert("Bạn cần đăng nhập lại với tư cách Admin!");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const result = await adminApi.generateAiPost(token, {
+        prompt: aiPrompt || undefined,
+        url: aiUrl || undefined,
+      });
+
+      if (result) {
+        setTitle(result.title || "");
+        if (result.title) {
+          setSlug(
+            result.title
+              .toLowerCase()
+              .replace(/[^a-z0-9\s-]/g, "")
+              .replace(/\s+/g, "-")
+          );
+        }
+        setContent(result.content || "");
+        setExcerpt(result.excerpt || "");
+        setMetaTitle(result.metaTitle || "");
+        setMetaDescription(result.metaDescription || "");
+        setFeaturedImageUrl(result.featuredImageUrl || "");
+        
+        alert("Đã tự động điền nội dung bài viết do AI tạo!");
+        setShowAiPanel(false);
+      }
+    } catch (error: any) {
+      console.error("AI Generation failed:", error);
+      alert(error.message || "Không thể tạo bài viết bằng AI. Vui lòng kiểm tra lại cấu hình API key.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div className={styles.crud}>
       <div className={styles.crud__header}>
@@ -105,6 +152,57 @@ export default function AdminNewPostPage() {
         <Link href="/admin/posts" className="btn btn--outline btn--sm">
           Quay lại
         </Link>
+      </div>
+
+      {/* AI Assistant Panel */}
+      <div className={styles.crud__card} style={{ marginBottom: "1.5rem", border: "1px dashed #c5a880", background: "#fcfaf7" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setShowAiPanel(!showAiPanel)}>
+          <h2 style={{ fontSize: "16px", color: "#8a6d48", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+            ✨ Trợ lý AI viết bài tự động
+          </h2>
+          <button type="button" className="btn btn--text" style={{ fontSize: "13px", padding: 0 }}>
+            {showAiPanel ? "Thu gọn ▲" : "Mở rộng ▼"}
+          </button>
+        </div>
+
+        {showAiPanel && (
+          <div style={{ marginTop: "1rem", borderTop: "1px solid #f1ede3", paddingTop: "1rem" }}>
+            <p style={{ fontSize: "13px", color: "#6b6b6b", margin: "0 0 1rem 0" }}>
+              Nhập chủ đề bạn muốn viết hoặc dán một đường dẫn bài viết thời trang tham khảo. AI sẽ tự động tạo Tiêu đề, Nội dung HTML, Mô tả ngắn và các trường SEO cho bạn.
+            </p>
+            <div className={styles.crud__formGroup}>
+              <label className={styles.crud__label}>Ý tưởng / Chủ đề bài viết</label>
+              <input
+                type="text"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                className={styles.crud__input}
+                placeholder="VD: 5 cách phối đồ nữ cá tính năng động cho mùa hè 2025"
+              />
+            </div>
+            <div className={styles.crud__formGroup}>
+              <label className={styles.crud__label}>Đường dẫn tham khảo (Scrape URL - Tuỳ chọn)</label>
+              <input
+                type="url"
+                value={aiUrl}
+                onChange={(e) => setAiUrl(e.target.value)}
+                className={styles.crud__input}
+                placeholder="https://example.com/blogs/cam-nang/bai-viet-thoi-trang"
+              />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
+              <button
+                type="button"
+                disabled={generating || (!aiPrompt && !aiUrl)}
+                onClick={handleGenerateAi}
+                className="btn btn--gold"
+                style={{ padding: "8px 16px", fontSize: "14px" }}
+              >
+                {generating ? "✨ AI đang viết..." : "✨ Tạo nội dung bài viết"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={styles.crud__card}>

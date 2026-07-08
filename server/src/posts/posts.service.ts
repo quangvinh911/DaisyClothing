@@ -4,10 +4,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto, UpdatePostDto, PostQueryDto } from './dto/post.dto';
 import { generateSlug, buildPaginationMeta } from '../common/utils/helpers';
 import { PaginatedResponse } from '../common/dto/pagination.dto';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class PostsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settingsService: SettingsService,
+  ) {}
 
   private readonly defaultInclude = {
     category: true,
@@ -264,5 +268,157 @@ export class PostsService {
   async remove(id: string) {
     await this.findById(id);
     return this.prisma.post.delete({ where: { id } });
+  }
+
+  /** Scrape text content and image URLs from a URL */
+  private async scrapeUrl(url: string): Promise<{ text: string; images: string[] }> {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+      });
+      if (!res.ok) return { text: '', images: [] };
+      const html = await res.text();
+      
+      // 1. Extract image URLs
+      const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+      const images: string[] = [];
+      let match;
+      while ((match = imgRegex.exec(html)) !== null) {
+        let imgUrl = match[1];
+        if (imgUrl.startsWith('//')) {
+          imgUrl = 'https:' + imgUrl;
+        } else if (imgUrl.startsWith('/') && !imgUrl.startsWith('//')) {
+          try {
+            const parsedUrl = new URL(url);
+            imgUrl = `${parsedUrl.protocol}//${parsedUrl.host}${imgUrl}`;
+          } catch (e) {}
+        }
+        
+        if (
+          imgUrl &&
+          !imgUrl.startsWith('data:') &&
+          !imgUrl.includes('tracker') &&
+          !imgUrl.includes('pixel') &&
+          (imgUrl.includes('.jpg') || imgUrl.includes('.jpeg') || imgUrl.includes('.png') || imgUrl.includes('.webp') || imgUrl.includes('hstatic.net') || imgUrl.includes('unsplash'))
+        ) {
+          images.push(imgUrl);
+        }
+      }
+      
+      const uniqueImages = Array.from(new Set(images)).slice(0, 15);
+
+      // 2. Extract text content
+      let bodyText = html;
+      bodyText = bodyText.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+      bodyText = bodyText.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+      bodyText = bodyText.replace(/<[^>]+>/g, ' ');
+      bodyText = bodyText.replace(/\s+/g, ' ').trim();
+      
+      return {
+        text: bodyText.slice(0, 10000),
+        images: uniqueImages,
+      };
+    } catch (error) {
+      console.error('Scraping error:', error);
+      return { text: '', images: [] };
+    }
+  }
+
+  /** Admin: generate post content using AI */
+  async generateAiPost(prompt?: string, url?: string) {
+    const apiKey = await this.settingsService.getValueByKey('gemini_api_key', '');
+    if (!apiKey) {
+      throw new ConflictException('Vui lòng cấu hình Gemini API Key trước trong phần Cấu hình.');
+    }
+
+    let scrapedData = { text: '', images: [] as string[] };
+    if (url) {
+      scrapedData = await this.scrapeUrl(url);
+    }
+
+    const promptText = `
+Bạn là một chuyên gia viết blog thời trang và làm đẹp chuyên nghiệp.
+Hãy tạo một bài viết blog thời trang/lifestyle chất lượng cao dựa trên yêu cầu sau đây:
+Yêu cầu/Chủ đề: "${prompt || 'Thời trang xu hướng mới'}"
+${scrapedData.text ? `Tham khảo thêm nội dung văn bản cào được từ liên kết: "${scrapedData.text}"` : ''}
+
+YÊU CẦU QUAN TRỌNG VỀ HÌNH ẢNH:
+${scrapedData.images.length > 0 ? `
+Chúng tôi đã cào được danh sách hình ảnh thực tế từ trang nguồn tham khảo:
+${scrapedData.images.map((imgUrl, i) => `[Ảnh ${i + 1}]: ${imgUrl}`).join('\n')}
+
+Hãy sử dụng các hình ảnh trên để phân bổ vào bài viết:
+1. Chọn 1 hình ảnh phù hợp nhất từ danh sách trên để gán vào trường "featuredImageUrl" làm ảnh đại diện bài viết.
+2. Chèn các hình ảnh khác từ danh sách này vào trong phần "content" dưới dạng thẻ HTML <img src="URL" alt="mô tả ảnh" style="display: block; margin: 20px auto; max-width: 100%; border-radius: 8px;" /> tại các vị trí ngắt đoạn hoặc dưới tiêu đề <h2> tương ứng để bài viết sinh động, trực quan.
+` : `
+Vì không có nguồn ảnh tham khảo, hãy sử dụng các hình ảnh thời trang chất lượng cao từ kho ảnh Unsplash để chèn vào bài viết.
+Cách tạo URL ảnh Unsplash: Sử dụng định dạng: https://images.unsplash.com/photo-[static_id]?w=800
+Dưới đây là một số ID ảnh thời trang/lifestyle thực tế trên Unsplash bạn hãy chọn để chèn:
+- photo-1490481651871-ab68de25d43d (phối đồ nữ sang trọng)
+- photo-1483985988355-763728e1935b (cửa hàng mua sắm)
+- photo-1539109136881-3be0616acf4b (street style)
+- photo-1515886657613-9f3515b0c78f (trang phục vàng trẻ trung)
+- photo-1496747611176-843222e1e57c (váy đầm dạo phố)
+- photo-1509631179647-0177331693ae (style tối giản thanh lịch)
+- photo-1545048702-79362596cdc9 (chất liệu vải)
+- photo-1558769132-cb1aea458c5e (quần áo treo móc)
+- photo-1508214751196-bcfd4ca60f91 (phụ kiện thời trang)
+- photo-1529139574466-a303027c1d8b (người mẫu chụp ảnh)
+
+Hãy chọn 1 ảnh làm "featuredImageUrl" (ảnh bìa) và chèn ít nhất 2 ảnh khác vào trong phần "content" dưới dạng thẻ HTML <img src="URL_UNSPLASH" alt="mô tả ảnh" style="display: block; margin: 20px auto; max-width: 100%; border-radius: 8px;" /> tại các đoạn ngắt dòng thích hợp. Hãy đảm bảo mỗi vị trí sử dụng một ID ảnh khác nhau để không bị lặp hình.
+`}
+
+Yêu cầu định dạng và nội dung bài viết:
+1. "title": Tiêu đề bài viết hấp dẫn, chuẩn SEO.
+2. "excerpt": Mô tả ngắn gọn (150-200 ký tự) tóm tắt bài viết.
+3. "content": Nội dung đầy đủ viết bằng tiếng Việt. Sử dụng các thẻ HTML như <h2>, <p>, <strong>, <ul>, <li> và các thẻ <img> để định dạng nội dung thật chuyên nghiệp, dễ đọc và đẹp mắt. Không cần bao bọc trong thẻ <html> hoặc <body>.
+4. "metaTitle": Tiêu đề SEO (dưới 60 ký tự).
+5. "metaDescription": Mô tả SEO (dưới 160 ký tự).
+6. "featuredImageUrl": Đường dẫn ảnh đại diện được chọn.
+
+Trả về một đối tượng JSON khớp chính xác với cấu trúc sau:
+{
+  "title": "string",
+  "excerpt": "string",
+  "content": "string",
+  "metaTitle": "string",
+  "metaDescription": "string",
+  "featuredImageUrl": "string"
+}
+`.trim();
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+            },
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini API Error: ${errorText}`);
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        throw new Error('Không nhận được nội dung từ Gemini API.');
+      }
+
+      return JSON.parse(text);
+    } catch (error: any) {
+      console.error('Gemini content generation failed:', error);
+      throw new ConflictException(error.message || 'Lỗi khi gọi API của Gemini.');
+    }
   }
 }
