@@ -108,6 +108,48 @@ export default async function LookbookListPage() {
           </div>
         )}
       </div>
+
+      {/* JSON-LD — CollectionPage */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "Lookbook & Gợi Ý Phối Đồ",
+            "description": "Bộ sưu tập ý tưởng outfit thời trang, lookbook phối đồ theo mùa và các phong cách thời trang ấn tượng từ DaisyDaily.",
+            "url": "https://daisydaily.shop/lookbook",
+            "isPartOf": {
+              "@type": "WebSite",
+              "name": "DaisyDaily",
+              "url": "https://daisydaily.shop",
+            },
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Trang chủ",
+                "item": "https://daisydaily.shop",
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Lookbook",
+                "item": "https://daisydaily.shop/lookbook",
+              },
+            ],
+          }),
+        }}
+      />
     </div>
   );
 }

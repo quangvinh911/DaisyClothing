@@ -10,8 +10,11 @@ export default function PublicLayout({
 }) {
   return (
     <>
+      <a href="#main-content" className="skip-to-content">
+        Bỏ qua đến nội dung chính
+      </a>
       <Header />
-      <main id="main-content">{children}</main>
+      <main id="main-content" role="main">{children}</main>
       <StickyTikTokButton />
       <ExitIntentPopup />
       <Footer />

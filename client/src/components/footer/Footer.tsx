@@ -73,7 +73,7 @@ export default function Footer() {
           {/* Quick Links */}
           <div className={styles.footer__section}>
             <h3 className={styles.footer__sectionTitle}>Liên kết</h3>
-            <div className={styles.footer__links}>
+            <nav aria-label="Liên kết nhanh" className={styles.footer__links}>
               {QUICK_LINKS.map((link) => (
                 <Link
                   key={link.href}
@@ -83,13 +83,13 @@ export default function Footer() {
                   {link.label}
                 </Link>
               ))}
-            </div>
+            </nav>
           </div>
 
           {/* Categories */}
           <div className={styles.footer__section}>
             <h3 className={styles.footer__sectionTitle}>Danh mục</h3>
-            <div className={styles.footer__links}>
+            <nav aria-label="Danh mục sản phẩm" className={styles.footer__links}>
               {CATEGORIES.map((link) => (
                 <Link
                   key={link.href}
@@ -99,7 +99,7 @@ export default function Footer() {
                   {link.label}
                 </Link>
               ))}
-            </div>
+            </nav>
           </div>
 
           {/* Newsletter */}

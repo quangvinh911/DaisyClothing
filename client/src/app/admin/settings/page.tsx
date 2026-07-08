@@ -25,6 +25,8 @@ export default function AdminSettingsPage() {
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
   const [customModel, setCustomModel] = useState("");
+  const [gaTrackingId, setGaTrackingId] = useState("");
+  const [googleSiteVerification, setGoogleSiteVerification] = useState("");
 
   const loadSettings = async () => {
     setLoading(true);
@@ -51,6 +53,8 @@ export default function AdminSettingsPage() {
           setSelectedModel("custom");
           setCustomModel(dbModel);
         }
+        setGaTrackingId(getVal("ga_tracking_id"));
+        setGoogleSiteVerification(getVal("google_site_verification"));
       }
     } catch (error) {
       console.error("Failed to load settings:", error);
@@ -84,6 +88,8 @@ export default function AdminSettingsPage() {
         adminApi.updateSetting(token, "contact_email", contactEmail),
         adminApi.updateSetting(token, "gemini_api_key", geminiApiKey),
         adminApi.updateSetting(token, "gemini_model", selectedModel === "custom" ? customModel : selectedModel),
+        adminApi.updateSetting(token, "ga_tracking_id", gaTrackingId),
+        adminApi.updateSetting(token, "google_site_verification", googleSiteVerification),
       ]);
 
       alert("Cập nhật cấu hình website thành công!");
@@ -246,6 +252,45 @@ export default function AdminSettingsPage() {
               style={{ minHeight: "120px" }}
               placeholder="Hiển thị tại trang Giới thiệu..."
             />
+          </div>
+
+          <h3 style={{ marginTop: "32px", color: "#2c2c2c", borderBottom: "1px solid #e5d5c0", paddingBottom: "8px" }}>
+            📈 Cấu hình Google SEO & Analytics
+          </h3>
+
+          <div className={styles.crud__formGroup}>
+            <label className={styles.crud__label}>Google Analytics ID (ga_tracking_id)</label>
+            <input
+              type="text"
+              value={gaTrackingId}
+              onChange={(e) => setGaTrackingId(e.target.value)}
+              className={styles.crud__input}
+              placeholder="VD: G-XXXXXXXXXX"
+            />
+            <small style={{ color: "#8a7a6b", marginTop: "4px", display: "block" }}>
+              Mã theo dõi Google Analytics 4. Lấy từ{" "}
+              <a href="https://analytics.google.com/" target="_blank" rel="noreferrer" style={{ color: "#c5a880" }}>
+                Google Analytics
+              </a>.
+            </small>
+          </div>
+
+          <div className={styles.crud__formGroup}>
+            <label className={styles.crud__label}>Google Site Verification (google_site_verification)</label>
+            <input
+              type="text"
+              value={googleSiteVerification}
+              onChange={(e) => setGoogleSiteVerification(e.target.value)}
+              className={styles.crud__input}
+              placeholder="VD: abc123xyz..."
+            />
+            <small style={{ color: "#8a7a6b", marginTop: "4px", display: "block" }}>
+              Mã xác minh quyền sở hữu trang web trên{" "}
+              <a href="https://search.google.com/search-console" target="_blank" rel="noreferrer" style={{ color: "#c5a880" }}>
+                Google Search Console
+              </a>.
+              Chỉ cần nhập giá trị <code>content</code> của thẻ meta verification.
+            </small>
           </div>
 
           <div className={styles.crud__formActions}>

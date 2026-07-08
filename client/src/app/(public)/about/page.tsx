@@ -89,6 +89,48 @@ export default async function AboutPage() {
           </div>
         </div>
       </div>
+
+      {/* JSON-LD — AboutPage */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
+            "name": "Về DaisyDaily",
+            "description": "Tìm hiểu thêm về DaisyDaily - Hành trình chia sẻ cảm hứng thời trang cá nhân, mẹo phối đồ đẹp mắt, review chân thực và lối sống tràn đầy năng lượng.",
+            "url": "https://daisydaily.shop/about",
+            "isPartOf": {
+              "@type": "WebSite",
+              "name": "DaisyDaily",
+              "url": "https://daisydaily.shop",
+            },
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Trang chủ",
+                "item": "https://daisydaily.shop",
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Về tôi",
+                "item": "https://daisydaily.shop/about",
+              },
+            ],
+          }),
+        }}
+      />
     </div>
   );
 }

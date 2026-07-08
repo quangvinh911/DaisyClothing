@@ -195,6 +195,58 @@ export default async function CategoryPage({
           </>
         )}
       </div>
+
+      {/* JSON-LD — CollectionPage */}
+      {category && (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "CollectionPage",
+                "name": `Thời trang ${category.name}`,
+                "description": `Khám phá các bài viết, sản phẩm và chia sẻ về phong cách thuộc danh mục ${category.name} trên DaisyDaily.`,
+                "url": `https://daisydaily.shop/category/${category.slug}`,
+                "isPartOf": {
+                  "@type": "WebSite",
+                  "name": "DaisyDaily",
+                  "url": "https://daisydaily.shop",
+                },
+              }),
+            }}
+          />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                  {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Trang chủ",
+                    "item": "https://daisydaily.shop",
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Danh mục",
+                    "item": "https://daisydaily.shop/blog",
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 3,
+                    "name": category.name,
+                    "item": `https://daisydaily.shop/category/${category.slug}`,
+                  },
+                ],
+              }),
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }

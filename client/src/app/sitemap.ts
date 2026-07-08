@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { api, SITE_URL } from "@/lib/api";
+import { api, SITE_URL, getAssetUrl } from "@/lib/api";
 import { Category, Post, PaginatedResponse } from "@/types";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -27,11 +27,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const postsSitemap = posts.map((post) => {
     const isLookbook = post.category?.slug === "outfits";
+    const imageUrl = getAssetUrl(post.featuredImageUrl);
     return {
       url: `${baseUrl}${isLookbook ? "/lookbook" : "/blog"}/${post.slug}`,
       lastModified: post.updatedAt ? new Date(post.updatedAt) : new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.8,
+      ...(imageUrl ? { images: [imageUrl] } : {}),
     };
   });
 

@@ -185,6 +185,48 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
           </>
         )}
       </div>
+
+      {/* JSON-LD — CollectionPage */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "Blog thời trang & Phối đồ",
+            "description": "Tổng hợp các bài viết chia sẻ phong cách thời trang, tips phối đồ, và review sản phẩm mới nhất từ DaisyDaily.",
+            "url": "https://daisydaily.shop/blog",
+            "isPartOf": {
+              "@type": "WebSite",
+              "name": "DaisyDaily",
+              "url": "https://daisydaily.shop",
+            },
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Trang chủ",
+                "item": "https://daisydaily.shop",
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Blog",
+                "item": "https://daisydaily.shop/blog",
+              },
+            ],
+          }),
+        }}
+      />
     </div>
   );
 }

@@ -86,6 +86,9 @@ export const metadata: Metadata = {
     shortcut: "/icon.svg?v=2",
     apple: "/icon.svg?v=2",
   },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
+  },
 };
 
 export default function RootLayout({
@@ -117,6 +120,28 @@ export default function RootLayout({
           </>
         )}
         {children}
+        {/* Organization JSON-LD — site-wide structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "DaisyDaily",
+              "url": "https://daisydaily.shop",
+              "logo": "https://daisydaily.shop/icon.svg",
+              "description": "Blog th\u1eddi trang & lifestyle c\u00e1 nh\u00e2n — chia s\u1ebb phong c\u00e1ch, tips ph\u1ed1i \u0111\u1ed3 v\u00e0 g\u1ee3i \u00fd mua s\u1eafm m\u1ed7i ng\u00e0y",
+              "sameAs": [
+                "https://www.tiktok.com/@em.xinh0905"
+              ],
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "contactType": "customer service",
+                "url": "https://daisydaily.shop/about"
+              }
+            }),
+          }}
+        />
       </body>
     </html>
   );

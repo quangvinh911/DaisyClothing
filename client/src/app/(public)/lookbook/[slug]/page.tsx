@@ -134,7 +134,7 @@ export default async function LookbookDetailPage({ params }: LookbookDetailPageP
           </div>
         )}
 
-        {/* JSON-LD Structured Data */}
+        {/* JSON-LD — BlogPosting */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -151,7 +151,52 @@ export default async function LookbookDetailPage({ params }: LookbookDetailPageP
                   "name": post.author?.displayName || "DaisyDaily",
                 },
               ],
+              "publisher": {
+                "@type": "Organization",
+                "name": "DaisyDaily",
+                "url": "https://daisydaily.shop",
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": "https://daisydaily.shop/icon.svg",
+                },
+              },
               "description": post.excerpt || post.title,
+              "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": `https://daisydaily.shop/lookbook/${post.slug}`,
+              },
+              "articleSection": "Lookbook",
+              "wordCount": post.content.replace(/<[^>]*>/g, "").split(/\s+/).length,
+            }),
+          }}
+        />
+        {/* JSON-LD — BreadcrumbList */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Trang chủ",
+                  "item": "https://daisydaily.shop",
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "Lookbook",
+                  "item": "https://daisydaily.shop/lookbook",
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": post.title,
+                  "item": `https://daisydaily.shop/lookbook/${post.slug}`,
+                },
+              ],
             }),
           }}
         />
