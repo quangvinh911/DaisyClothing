@@ -19,84 +19,103 @@ const poppins = Poppins({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://daisydaily.shop"),
-  alternates: {
-    canonical: "/",
-  },
-  title: {
-    default: "DaisyDaily | Blog Thời Trang, Tips Phối Đồ & Lifestyle",
-    template: "%s | DaisyDaily",
-  },
-  description:
-    "Blog thời trang & lifestyle cá nhân chia sẻ phong cách thời trang hàng ngày, tips phối đồ nữ đẹp, review quần áo xu hướng và gợi ý mua sắm cực chất từ DaisyDaily.",
-  keywords: [
-    "thời trang nữ",
-    "blog thời trang",
-    "phối đồ nữ",
-    "tips phối đồ",
-    "xu hướng thời trang",
-    "phối đồ đẹp",
-    "review quần áo",
-    "ootd",
-    "style thời trang",
-    "DaisyDaily",
-    "mua sắm",
-    "affiliate",
-    "TikTok",
-    "Shopee",
-  ],
-  authors: [{ name: "DaisyDaily" }],
-  openGraph: {
-    type: "website",
-    locale: "vi_VN",
-    siteName: "DaisyDaily",
-    title: "DaisyDaily | Blog Thời Trang, Tips Phối Đồ & Lifestyle",
+import { api } from "@/lib/api";
+import { SiteSetting } from "@/types";
+
+export async function generateMetadata(): Promise<Metadata> {
+  let googleVerification = "";
+  try {
+    const settings = (await api.getSettings().catch(() => [])) as SiteSetting[];
+    googleVerification = settings.find((s) => s.key === "google_site_verification")?.value || "";
+  } catch (e) {
+    // Ignore
+  }
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://daisydaily.shop"),
+    alternates: {
+      canonical: "/",
+    },
+    title: {
+      default: "DaisyDaily | Blog Thời Trang, Tips Phối Đồ & Lifestyle",
+      template: "%s | DaisyDaily",
+    },
     description:
-      "Blog thời trang & lifestyle cá nhân chia sẻ phong cách thời trang hàng ngày, tips phối đồ nữ đẹp, review quần áo xu hướng và gợi ý mua sắm cực chất.",
-    images: [
-      {
-        url: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&h=630&fit=crop",
-        width: 1200,
-        height: 630,
-        alt: "DaisyDaily | Blog Thời Trang, Tips Phối Đồ & Lifestyle",
-      },
+      "Blog thời trang & lifestyle cá nhân chia sẻ phong cách thời trang hàng ngày, tips phối đồ nữ đẹp, review quần áo xu hướng và gợi ý mua sắm cực chất từ DaisyDaily.",
+    keywords: [
+      "thời trang nữ",
+      "blog thời trang",
+      "phối đồ nữ",
+      "tips phối đồ",
+      "xu hướng thời trang",
+      "phối đồ đẹp",
+      "review quần áo",
+      "ootd",
+      "style thời trang",
+      "DaisyDaily",
+      "mua sắm",
+      "affiliate",
+      "TikTok",
+      "Shopee",
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "DaisyDaily | Blog Thời Trang, Tips Phối Đồ & Lifestyle",
-    description:
-      "Blog thời trang & lifestyle cá nhân chia sẻ phong cách thời trang hàng ngày, tips phối đồ nữ đẹp, review quần áo xu hướng và gợi ý mua sắm cực chất.",
-    images: ["https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&h=630&fit=crop"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    authors: [{ name: "DaisyDaily" }],
+    openGraph: {
+      type: "website",
+      locale: "vi_VN",
+      siteName: "DaisyDaily",
+      title: "DaisyDaily | Blog Thời Trang, Tips Phối Đồ & Lifestyle",
+      description:
+        "Blog thời trang & lifestyle cá nhân chia sẻ phong cách thời trang hàng ngày, tips phối đồ nữ đẹp, review quần áo xu hướng và gợi ý mua sắm cực chất.",
+      images: [
+        {
+          url: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&h=630&fit=crop",
+          width: 1200,
+          height: 630,
+          alt: "DaisyDaily | Blog Thời Trang, Tips Phối Đồ & Lifestyle",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "DaisyDaily | Blog Thời Trang, Tips Phối Đồ & Lifestyle",
+      description:
+        "Blog thời trang & lifestyle cá nhân chia sẻ phong cách thời trang hàng ngày, tips phối đồ nữ đẹp, review quần áo xu hướng và gợi ý mua sắm cực chất.",
+      images: ["https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&h=630&fit=crop"],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
     },
-  },
-  icons: {
-    icon: "/icon.svg?v=2",
-    shortcut: "/icon.svg?v=2",
-    apple: "/icon.svg?v=2",
-  },
-  verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
-  },
-};
+    icons: {
+      icon: "/icon.svg?v=2",
+      shortcut: "/icon.svg?v=2",
+      apple: "/icon.svg?v=2",
+    },
+    verification: {
+      google: googleVerification,
+    },
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const gaId = process.env.GA_TRACKING_ID;
+  let gaId = "";
+  try {
+    const settings = (await api.getSettings().catch(() => [])) as SiteSetting[];
+    gaId = settings.find((s) => s.key === "ga_tracking_id")?.value || "";
+  } catch (e) {
+    // Ignore
+  }
 
   return (
     <html lang="vi" className={`${montserrat.variable} ${poppins.variable}`}>
