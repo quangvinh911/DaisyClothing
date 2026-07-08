@@ -22,11 +22,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       return;
     }
 
-    const token = localStorage.getItem("admin_token");
-    const userStr = localStorage.getItem("admin_user");
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    const userStr = typeof window !== "undefined" ? localStorage.getItem("admin_user") : null;
 
     if (!token) {
-      router.push("/admin/login");
+      window.location.replace("/admin/login");
     } else {
       setAuthorized(true);
       if (userStr) {
@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const handleLogout = () => {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_user");
-    router.push("/admin/login");
+    window.location.replace("/admin/login");
   };
 
   if (!authorized) {
