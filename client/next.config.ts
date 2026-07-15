@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   sassOptions: {
     includePaths: [resolve(__dirname, "src/scss")],
   },
+  turbopack: {
+    root: resolve(__dirname, ".."),
+  },
 
   // Image optimization
   images: {
