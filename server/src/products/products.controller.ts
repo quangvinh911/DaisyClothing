@@ -34,6 +34,22 @@ export class ProductsController {
     return this.productsService.findActive(query);
   }
 
+  /** Public: get fresh TikTok cover image */
+  @Get('tiktok-cover')
+  async getTikTokCover(
+    @Query('url') tiktokUrl: string,
+    @Res() res: Response,
+  ) {
+    if (!tiktokUrl) {
+      return res.status(400).send('Missing url parameter');
+    }
+    const freshUrl = await this.productsService.getFreshTikTokCover(tiktokUrl);
+    if (freshUrl) {
+      return res.redirect(freshUrl);
+    }
+    return res.status(404).send('Cover not found');
+  }
+
   /** Public: featured products for homepage */
   @Get('featured')
   findFeatured(@Query('count') count?: number) {

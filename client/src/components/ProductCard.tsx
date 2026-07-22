@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import styles from "./ProductCard.module.scss";
 import { Product } from "@/types";
-import { getAssetUrl, getProductRedirectUrl } from "@/lib/api";
+import { getAssetUrl, getProductRedirectUrl, API_BASE } from "@/lib/api";
 
 interface ProductCardProps {
   product: Product;
@@ -35,7 +35,20 @@ function formatNumber(num: number | null | undefined): string {
 
 export default function ProductCard({ product, index }: ProductCardProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const imageUrl = getAssetUrl(product.imageUrl);
+  const [imgSrc, setImgSrc] = useState<string | null>(getAssetUrl(product.imageUrl));
+  const [imgErrorCount, setImgErrorCount] = useState(0);
+
+  const handleImgError = () => {
+    if (imgErrorCount === 0 && product.tiktokVideoUrl) {
+      setImgErrorCount(1);
+      const proxyUrl = `${API_BASE}/products/tiktok-cover?url=${encodeURIComponent(product.tiktokVideoUrl)}`;
+      setImgSrc(proxyUrl);
+    } else {
+      setImgErrorCount(2);
+      setImgSrc(null);
+    }
+  };
+
   const redirectUrl = getProductRedirectUrl(product.slug);
   const tiktokVideoId = getTikTokVideoId(product.tiktokVideoUrl);
   const isPhotoPost = product.tiktokVideoUrl?.includes('/photo/');
@@ -86,8 +99,15 @@ export default function ProductCard({ product, index }: ProductCardProps) {
     <>
       <div className={styles.productCard} style={{ animationDelay: `${index * 0.08}s` }}>
         <div className={styles.productCard__imageContainer} onClick={handleMediaClick}>
-          {imageUrl ? (
-            <img src={imageUrl} alt={product.name} className={styles.productCard__image} loading="lazy" />
+          {imgSrc ? (
+            <img
+              src={imgSrc}
+              alt={product.name}
+              className={styles.productCard__image}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={handleImgError}
+            />
           ) : (
             <div
               className={styles.productCard__imageFallback}

@@ -548,4 +548,41 @@ export class ProductsService {
       errors: errors
     };
   }
+
+  private coverCache = new Map<string, { url: string; expiresAt: number }>();
+
+  async getFreshTikTokCover(tiktokUrl: string): Promise<string | null> {
+    if (!tiktokUrl) return null;
+
+    const cached = this.coverCache.get(tiktokUrl);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.url;
+    }
+
+    try {
+      const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(tiktokUrl)}`;
+      const res = await fetch(oembedUrl, {
+        headers: this.getTikTokHeaders(),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data && data.thumbnail_url) {
+        this.coverCache.set(tiktokUrl, {
+          url: data.thumbnail_url,
+          expiresAt: Date.now() + 6 * 3600 * 1000,
+        });
+
+        // Async update DB with fresh image URL
+        this.prisma.product.updateMany({
+          where: { tiktokVideoUrl: tiktokUrl },
+          data: { imageUrl: data.thumbnail_url },
+        }).catch(() => null);
+
+        return data.thumbnail_url;
+      }
+    } catch (e) {
+      // Ignore
+    }
+    return null;
+  }
 }
