@@ -83,14 +83,17 @@ export class ProductsController {
       select: { id: true },
     });
 
-    if (product) {
+    const userAgent = req.headers['user-agent'] || '';
+    const isBot = /bot|googlebot|crawler|spider|robot|crawling|ahrefs|semrush|bytespider|facebookexternalhit|tiktokbot|telegrambot|whatsapp/i.test(userAgent);
+
+    if (product && !isBot) {
       // Log click asynchronously (don't block redirect)
       this.prisma.affiliateClick.create({
         data: {
           productId: product.id,
           ipAddress: this.getClientIp(req),
           country: this.getHeaderValue(req.headers['cf-ipcountry']),
-          userAgent: req.headers['user-agent'] || null,
+          userAgent: userAgent || null,
           referrerUrl: req.headers['referer'] || null,
           utmSource: utmSource || null,
           utmMedium: utmMedium || null,
