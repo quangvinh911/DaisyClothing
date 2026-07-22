@@ -54,7 +54,13 @@ export default function AdminScanPage() {
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("admin_token");
-    if (!token) return;
+    if (!token) {
+      setError("Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn. Đang chuyển hướng...");
+      setTimeout(() => {
+        window.location.href = "/admin/login";
+      }, 1500);
+      return;
+    }
 
     setError(null);
     setResults(null);
@@ -93,7 +99,16 @@ export default function AdminScanPage() {
         throw new Error("Không thể thực hiện scan");
       }
     } catch (err: any) {
-      setError(err.message || "Đã xảy ra lỗi trong quá trình quét");
+      if (err.message && (err.message.includes("401") || err.message.includes("Unauthorized"))) {
+        setError("Mã xác thực Admin không hợp lệ hoặc đã hết hạn (401 Unauthorized). Vui lòng đăng nhập lại!");
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("admin_user");
+        setTimeout(() => {
+          window.location.href = "/admin/login";
+        }, 2000);
+      } else {
+        setError(err.message || "Đã xảy ra lỗi trong quá trình quét");
+      }
     } finally {
       setLoading(false);
     }
