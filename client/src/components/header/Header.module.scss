@@ -18,19 +18,22 @@
   }
 
   &__logo {
-    font-family: $font-heading;
-    font-size: 1.75rem;
-    font-weight: $font-weight-bold;
-    color: $color-charcoal;
-    letter-spacing: -0.02em;
-    transition: color $transition-fast;
+    font-family: $font-logo;
+    font-size: 1.85rem;
+    font-weight: 600;
+    font-style: italic;
+    color: #2D251E;
+    letter-spacing: 0.01em;
+    display: inline-flex;
+    align-items: center;
+    transition: all $transition-fast;
 
     &:hover {
-      color: $color-gold;
+      color: $color-gold-dark;
     }
 
     @include respond-to('md') {
-      font-size: 2rem;
+      font-size: 2.1rem;
     }
   }
 

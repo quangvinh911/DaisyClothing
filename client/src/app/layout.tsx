@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Montserrat, Poppins } from "next/font/google";
+import { Montserrat, Poppins, Playfair_Display, Cormorant_Garamond } from "next/font/google";
 import Script from "next/script";
 import "./globals.scss";
 
@@ -16,6 +16,22 @@ const poppins = Poppins({
   weight: ["300", "400", "500", "600", "700", "800"],
   style: ["normal", "italic"],
   variable: "--font-body",
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-logo",
+  display: "swap",
+});
+
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin", "vietnamese"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-serif",
   display: "swap",
 });
 
@@ -118,7 +134,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="vi" className={`${montserrat.variable} ${poppins.variable}`}>
+    <html lang="vi" className={`${montserrat.variable} ${poppins.variable} ${playfair.variable} ${cormorant.variable}`}>
       <body>
         {gaId && (
           <>
