@@ -1,21 +1,51 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "../admin-crud.module.scss";
-import { adminApi, api, getAssetUrl } from "@/lib/api";
+import { adminApi, getAssetUrl } from "@/lib/api";
 import { Product, PaginatedResponse } from "@/types";
+
+type ProductSortField =
+  | "favorite"
+  | "name"
+  | "brand"
+  | "price"
+  | "platform"
+  | "clicks"
+  | "createdAt"
+  | "isActive";
+
+type SortOrder = "asc" | "desc";
+
+const DEFAULT_SORT_ORDERS: Record<ProductSortField, SortOrder> = {
+  favorite: "desc",
+  name: "asc",
+  brand: "asc",
+  price: "asc",
+  platform: "asc",
+  clicks: "desc",
+  createdAt: "desc",
+  isActive: "desc",
+};
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [searchDraft, setSearchDraft] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [platform, setPlatform] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<PaginatedResponse<Product>["meta"] | null>(null);
+  const [sortBy, setSortBy] = useState<ProductSortField>("favorite");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
-  const fetchProducts = async (targetPage = page) => {
+  const fetchProducts = useCallback(async (targetPage = page) => {
     const token = localStorage.getItem("admin_token");
     if (!token) return;
 
@@ -25,34 +55,58 @@ export default function AdminProductsPage() {
         page: targetPage.toString(),
         limit: "10",
       };
-      if (search) queryParams.search = search;
+      if (appliedSearch) queryParams.search = appliedSearch;
       if (platform) queryParams.platform = platform;
+      queryParams.sortBy = sortBy;
+      queryParams.sortOrder = sortOrder;
 
       const res = await adminApi.getProducts(token, queryParams);
       if (res) {
         const paginated = res as PaginatedResponse<Product>;
         setProducts(paginated.data);
         setMeta(paginated.meta);
+        setSelectedIds([]);
       }
     } catch (error) {
       console.error("Failed to fetch admin products:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [appliedSearch, page, platform, sortBy, sortOrder]);
 
   useEffect(() => {
-    fetchProducts();
-  }, [page, platform]);
+    const timeoutId = window.setTimeout(() => {
+      void fetchProducts();
+    }, 0);
 
-  useEffect(() => {
-    setSelectedIds([]);
-  }, [products]);
+    return () => window.clearTimeout(timeoutId);
+  }, [fetchProducts]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setAppliedSearch(searchDraft.trim());
     setPage(1);
-    fetchProducts();
+  };
+
+  const handleSort = (field: ProductSortField) => {
+    setPage(1);
+    if (sortBy === field) {
+      setSortOrder((current) => current === "asc" ? "desc" : "asc");
+      return;
+    }
+
+    setSortBy(field);
+    setSortOrder(DEFAULT_SORT_ORDERS[field]);
+  };
+
+  const getAriaSort = (field: ProductSortField): "ascending" | "descending" | undefined => {
+    if (sortBy !== field) return undefined;
+    return sortOrder === "asc" ? "ascending" : "descending";
+  };
+
+  const getSortIndicator = (field: ProductSortField) => {
+    if (sortBy !== field) return "↕";
+    return sortOrder === "asc" ? "▲" : "▼";
   };
 
   const handleDelete = async (id: string) => {
@@ -65,8 +119,8 @@ export default function AdminProductsPage() {
       await adminApi.deleteProduct(token, id);
       alert("Đã xóa sản phẩm thành công!");
       fetchProducts();
-    } catch (error: any) {
-      alert(error.message || "Xóa sản phẩm thất bại");
+    } catch (error: unknown) {
+      alert(getErrorMessage(error, "Xóa sản phẩm thất bại"));
     }
   };
 
@@ -79,8 +133,8 @@ export default function AdminProductsPage() {
       setProducts((prev) =>
         prev.map((p) => (p.id === id ? { ...p, isActive: !currentIsActive } : p))
       );
-    } catch (error: any) {
-      alert(error.message || "Cập nhật trạng thái thất bại");
+    } catch (error: unknown) {
+      alert(getErrorMessage(error, "Cập nhật trạng thái thất bại"));
     }
   };
 
@@ -94,24 +148,16 @@ export default function AdminProductsPage() {
       await adminApi.updateProduct(token, id, { isFavorite: nextIsFavorite });
 
       setProducts((prev) =>
-        prev
-          .map((p) => (p.id === id ? { ...p, isFavorite: nextIsFavorite } : p))
-          .sort((a, b) => {
-            if (a.isFavorite !== b.isFavorite) {
-              return Number(b.isFavorite) - Number(a.isFavorite);
-            }
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          })
+        prev.map((p) => (p.id === id ? { ...p, isFavorite: nextIsFavorite } : p))
       );
 
-      if (nextIsFavorite && page !== 1) {
+      if (sortBy === "favorite" && nextIsFavorite && page !== 1) {
         setPage(1);
-        fetchProducts(1);
       } else {
         fetchProducts(page);
       }
-    } catch (error: any) {
-      alert(error.message || "Cáº­p nháº­t sáº£n pháº©m yÃªu thÃ­ch tháº¥t báº¡i");
+    } catch (error: unknown) {
+      alert(getErrorMessage(error, "Cập nhật sản phẩm yêu thích thất bại"));
     }
   };
 
@@ -143,8 +189,8 @@ export default function AdminProductsPage() {
       alert("Đã xóa các sản phẩm thành công!");
       setSelectedIds([]);
       fetchProducts();
-    } catch (error: any) {
-      alert(error.message || "Xóa hàng loạt thất bại");
+    } catch (error: unknown) {
+      alert(getErrorMessage(error, "Xóa hàng loạt thất bại"));
     }
   };
 
@@ -182,8 +228,8 @@ export default function AdminProductsPage() {
             <input
               type="text"
               placeholder="Tìm theo tên sản phẩm..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
               className={styles.crud__searchInput}
             />
             <button type="submit" className="btn btn--gold btn--sm">
@@ -209,33 +255,135 @@ export default function AdminProductsPage() {
         </div>
 
         {/* Table */}
-        {loading ? (
+        {loading && products.length === 0 ? (
           <p>Đang tải danh sách sản phẩm...</p>
         ) : products.length === 0 ? (
           <p>Không tìm thấy sản phẩm nào.</p>
         ) : (
           <>
-            <table className={styles.crud__table}>
+            <div className={styles.crud__tableWrap} aria-busy={loading}>
+              <table className={styles.crud__table}>
               <thead>
                 <tr>
-                  <th style={{ width: "40px", textAlign: "center" }}>
+                  <th scope="col" style={{ width: "40px", textAlign: "center" }}>
                     <input
                       type="checkbox"
                       checked={products.length > 0 && selectedIds.length === products.length}
                       onChange={(e) => handleSelectAll(e.target.checked)}
+                      aria-label="Chọn tất cả sản phẩm trên trang này"
                       style={{ cursor: "pointer" }}
                     />
                   </th>
-                  <th style={{ width: "72px", textAlign: "center" }}>Y&ecirc;u th&iacute;ch</th>
-                  <th>Hình ảnh</th>
-                  <th>Tên sản phẩm</th>
-                  <th>Thương hiệu</th>
-                  <th>Giá tiền</th>
-                  <th>Sàn</th>
-                  <th>Lượt click</th>
-                  <th>Ngày tạo</th>
-                  <th>Trạng thái</th>
-                  <th>Hành động</th>
+                  <th
+                    scope="col"
+                    style={{ width: "88px", textAlign: "center" }}
+                    aria-sort={getAriaSort("favorite")}
+                  >
+                    <button
+                      type="button"
+                      className={`${styles.crud__sortButton} ${styles["crud__sortButton--centered"]}`}
+                      onClick={() => handleSort("favorite")}
+                      aria-label="Sắp xếp theo yêu thích"
+                    >
+                      Yêu thích
+                      <span className={styles.crud__sortIndicator} aria-hidden="true">
+                        {getSortIndicator("favorite")}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col">Hình ảnh</th>
+                  <th scope="col" aria-sort={getAriaSort("name")}>
+                    <button
+                      type="button"
+                      className={styles.crud__sortButton}
+                      onClick={() => handleSort("name")}
+                      aria-label="Sắp xếp theo tên sản phẩm"
+                    >
+                      Tên sản phẩm
+                      <span className={styles.crud__sortIndicator} aria-hidden="true">
+                        {getSortIndicator("name")}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" aria-sort={getAriaSort("brand")}>
+                    <button
+                      type="button"
+                      className={styles.crud__sortButton}
+                      onClick={() => handleSort("brand")}
+                      aria-label="Sắp xếp theo thương hiệu"
+                    >
+                      Thương hiệu
+                      <span className={styles.crud__sortIndicator} aria-hidden="true">
+                        {getSortIndicator("brand")}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" aria-sort={getAriaSort("price")}>
+                    <button
+                      type="button"
+                      className={styles.crud__sortButton}
+                      onClick={() => handleSort("price")}
+                      aria-label="Sắp xếp theo giá tiền"
+                    >
+                      Giá tiền
+                      <span className={styles.crud__sortIndicator} aria-hidden="true">
+                        {getSortIndicator("price")}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" aria-sort={getAriaSort("platform")}>
+                    <button
+                      type="button"
+                      className={styles.crud__sortButton}
+                      onClick={() => handleSort("platform")}
+                      aria-label="Sắp xếp theo sàn"
+                    >
+                      Sàn
+                      <span className={styles.crud__sortIndicator} aria-hidden="true">
+                        {getSortIndicator("platform")}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" aria-sort={getAriaSort("clicks")}>
+                    <button
+                      type="button"
+                      className={styles.crud__sortButton}
+                      onClick={() => handleSort("clicks")}
+                      aria-label="Sắp xếp theo lượt click"
+                    >
+                      Lượt click
+                      <span className={styles.crud__sortIndicator} aria-hidden="true">
+                        {getSortIndicator("clicks")}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" aria-sort={getAriaSort("createdAt")}>
+                    <button
+                      type="button"
+                      className={styles.crud__sortButton}
+                      onClick={() => handleSort("createdAt")}
+                      aria-label="Sắp xếp theo ngày tạo"
+                    >
+                      Ngày tạo
+                      <span className={styles.crud__sortIndicator} aria-hidden="true">
+                        {getSortIndicator("createdAt")}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col" aria-sort={getAriaSort("isActive")}>
+                    <button
+                      type="button"
+                      className={styles.crud__sortButton}
+                      onClick={() => handleSort("isActive")}
+                      aria-label="Sắp xếp theo trạng thái"
+                    >
+                      Trạng thái
+                      <span className={styles.crud__sortIndicator} aria-hidden="true">
+                        {getSortIndicator("isActive")}
+                      </span>
+                    </button>
+                  </th>
+                  <th scope="col">Hành động</th>
                 </tr>
               </thead>
               <tbody>
@@ -249,6 +397,7 @@ export default function AdminProductsPage() {
                           type="checkbox"
                           checked={selectedIds.includes(prod.id)}
                           onChange={(e) => handleSelectOne(prod.id, e.target.checked)}
+                          aria-label={`Chọn ${prod.name}`}
                           style={{ cursor: "pointer" }}
                         />
                       </td>
@@ -357,7 +506,14 @@ export default function AdminProductsPage() {
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </div>
+
+            {loading && (
+              <p className={styles.crud__tableStatus} role="status">
+                Đang cập nhật thứ tự sản phẩm...
+              </p>
+            )}
 
             {/* Pagination */}
             {meta && meta.totalPages > 1 && (

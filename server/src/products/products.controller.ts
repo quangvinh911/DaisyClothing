@@ -45,9 +45,72 @@ export class ProductsController {
     }
     const freshUrl = await this.productsService.getFreshTikTokCover(tiktokUrl);
     if (freshUrl) {
-      return res.redirect(freshUrl);
+      try {
+        const imageResponse = await fetch(freshUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+          },
+        });
+
+        if (imageResponse.ok) {
+          const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+          const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=21600, stale-while-revalidate=86400');
+          return res.status(200).send(imageBuffer);
+        }
+      } catch {
+        // TikTok may be temporarily unavailable; return the normal not-found response.
+      }
     }
     return res.status(404).send('Cover not found');
+  }
+
+  /** Public: proxy a playable TikTok MP4 with byte-range support. */
+  @Get('tiktok-video')
+  async getTikTokVideo(
+    @Query('url') tiktokUrl: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    if (!tiktokUrl) {
+      return res.status(400).send('Missing url parameter');
+    }
+
+    const streamUrl = await this.productsService.getTikTokVideoStreamUrl(tiktokUrl);
+    if (!streamUrl) {
+      return res.status(404).send('Video not found');
+    }
+
+    try {
+      const range = this.getHeaderValue(req.headers.range);
+      const upstream = await fetch(streamUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'video/mp4,video/*;q=0.9,*/*;q=0.8',
+          ...(range ? { Range: range } : {}),
+        },
+      });
+
+      if (!upstream.ok && upstream.status !== 206) {
+        return res.status(502).send('TikTok video upstream unavailable');
+      }
+
+      const contentType = upstream.headers.get('content-type') || 'video/mp4';
+      const contentLength = upstream.headers.get('content-length');
+      const contentRange = upstream.headers.get('content-range');
+      const videoBuffer = Buffer.from(await upstream.arrayBuffer());
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=900');
+      if (contentLength) res.setHeader('Content-Length', contentLength);
+      if (contentRange) res.setHeader('Content-Range', contentRange);
+      return res.status(upstream.status).send(videoBuffer);
+    } catch {
+      return res.status(502).send('Unable to load TikTok video');
+    }
   }
 
   /** Public: featured products for homepage */

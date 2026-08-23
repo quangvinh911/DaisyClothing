@@ -1,5 +1,5 @@
 import {
-  IsString, IsOptional, IsEnum, IsBoolean, IsNumber, IsUUID,
+  IsString, IsOptional, IsEnum, IsBoolean, IsNumber, IsUUID, IsIn,
 } from 'class-validator';
 import { Platform } from '@prisma/client';
 import { Type } from 'class-transformer';
@@ -166,8 +166,16 @@ export class ProductQueryDto {
   isActive?: boolean;
 
   @IsOptional()
-  @IsString()
+  @IsIn([
+    'best_seller', 'price_asc', 'price_desc', 'latest',
+    'favorite', 'name', 'brand', 'price', 'platform',
+    'clicks', 'createdAt', 'isActive',
+  ])
   sortBy?: string;
+
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc';
 
   @IsOptional()
   @Type(() => Number)

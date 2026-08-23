@@ -24,32 +24,34 @@ interface ScanResponse {
   errors: { url: string; error: string }[];
 }
 
+interface ScanRequest {
+  mode: 1 | 2 | 3;
+  tiktokUrl?: string;
+  count?: number;
+  videoUrls?: string[];
+}
+
+const TIKTOK_URL_PATTERN =
+  /https?:\/\/(?:[a-z0-9-]+\.)*tiktok\.com\/[^\s<>"'[\](){}]+/gi;
+
+function extractTikTokUrls(value: string) {
+  const matches = value.match(TIKTOK_URL_PATTERN) ?? [];
+  return Array.from(
+    new Set(matches.map((url) => url.replace(/[.,;:!?]+$/, ""))),
+  );
+}
+
 export default function AdminScanPage() {
   const [mode, setMode] = useState<1 | 2 | 3>(1);
   const [tiktokUrl, setTiktokUrl] = useState("");
   const [count, setCount] = useState("10");
-  const [videoUrls, setVideoUrls] = useState<string[]>([""]);
+  const [videoUrlList, setVideoUrlList] = useState("");
   const [bulkUrls, setBulkUrls] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<ScanResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const handleAddInput = () => {
-    setVideoUrls((prev) => [...prev, ""]);
-  };
-
-  const handleRemoveInput = (index: number) => {
-    if (videoUrls.length <= 1) return;
-    setVideoUrls((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleUrlChange = (index: number, value: string) => {
-    setVideoUrls((prev) => {
-      const copy = [...prev];
-      copy[index] = value;
-      return copy;
-    });
-  };
+  const detectedVideoUrls = extractTikTokUrls(videoUrlList);
+  const detectedBulkUrls = extractTikTokUrls(bulkUrls);
 
   const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +69,7 @@ export default function AdminScanPage() {
     setLoading(true);
 
     try {
-      let payload: any = { mode };
+      const payload: ScanRequest = { mode };
 
       if (mode === 1) {
         if (!tiktokUrl.trim()) {
@@ -76,20 +78,15 @@ export default function AdminScanPage() {
         payload.tiktokUrl = tiktokUrl.trim();
         payload.count = Number(count);
       } else if (mode === 2) {
-        const filteredUrls = videoUrls.filter((url) => url.trim() !== "");
-        if (filteredUrls.length === 0) {
-          throw new Error("Vui lòng nhập ít nhất một đường dẫn video");
+        if (detectedVideoUrls.length === 0) {
+          throw new Error("Không tìm thấy đường dẫn TikTok hợp lệ trong danh sách");
         }
-        payload.videoUrls = filteredUrls;
+        payload.videoUrls = detectedVideoUrls;
       } else {
-        const splitUrls = bulkUrls
-          .split("\n")
-          .map((url) => url.trim())
-          .filter((url) => url !== "");
-        if (splitUrls.length === 0) {
-          throw new Error("Vui lòng nhập ít nhất một đường dẫn video/photo");
+        if (detectedBulkUrls.length === 0) {
+          throw new Error("Không tìm thấy đường dẫn TikTok hợp lệ trong danh sách");
         }
-        payload.videoUrls = splitUrls;
+        payload.videoUrls = detectedBulkUrls;
       }
 
       const response = await adminApi.scanProducts(token, payload) as ScanResponse;
@@ -98,8 +95,12 @@ export default function AdminScanPage() {
       } else {
         throw new Error("Không thể thực hiện scan");
       }
-    } catch (err: any) {
-      if (err.message && (err.message.includes("401") || err.message.includes("Unauthorized"))) {
+    } catch (err: unknown) {
+      const message = err instanceof Error && err.message
+        ? err.message
+        : "Đã xảy ra lỗi trong quá trình quét";
+
+      if (message.includes("401") || message.includes("Unauthorized")) {
         setError("Mã xác thực Admin không hợp lệ hoặc đã hết hạn (401 Unauthorized). Vui lòng đăng nhập lại!");
         localStorage.removeItem("admin_token");
         localStorage.removeItem("admin_user");
@@ -107,7 +108,7 @@ export default function AdminScanPage() {
           window.location.href = "/admin/login";
         }, 2000);
       } else {
-        setError(err.message || "Đã xảy ra lỗi trong quá trình quét");
+        setError(message);
       }
     } finally {
       setLoading(false);
@@ -194,51 +195,44 @@ export default function AdminScanPage() {
           ) : mode === 2 ? (
             /* Mode 2 inputs */
             <div className={styles.crud__formGroup}>
-              <label className={styles.crud__label}>Danh sách đường dẫn video/photo TikTok</label>
-              {videoUrls.map((url, idx) => (
-                <div key={idx} className={localStyles.urlInputRow}>
-                  <input
-                    type="url"
-                    placeholder={`Đường dẫn video/photo #${idx + 1}`}
-                    value={url}
-                    onChange={(e) => handleUrlChange(idx, e.target.value)}
-                    className={styles.crud__input}
-                    disabled={loading}
-                  />
-                  {videoUrls.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveInput(idx)}
-                      className={localStyles.btnRemove}
-                      title="Xóa dòng này"
-                      disabled={loading}
-                    >
-                      ❌
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={handleAddInput}
-                className={localStyles.btnAddMore}
+              <label htmlFor="mode-2-video-urls" className={styles.crud__label}>
+                Danh sách đường dẫn video/photo TikTok
+              </label>
+              <textarea
+                id="mode-2-video-urls"
+                placeholder={"Dán nhiều đường dẫn vào đây, mỗi dòng một link.\nHỗ trợ cả dạng: [https://www.tiktok.com/@username/video/123](https://www.tiktok.com/@username/video/123)"}
+                value={videoUrlList}
+                onChange={(e) => setVideoUrlList(e.target.value)}
+                className={`${styles.crud__textarea} ${localStyles.urlListTextarea}`}
                 disabled={loading}
-              >
-                ➕ Thêm đường dẫn video/photo
-              </button>
+                spellCheck={false}
+              />
+              <p className={localStyles.urlListHint} aria-live="polite">
+                {detectedVideoUrls.length > 0
+                  ? `Đã nhận diện ${detectedVideoUrls.length} đường dẫn duy nhất.`
+                  : "Có thể dán link thường hoặc danh sách link Markdown."}
+              </p>
             </div>
           ) : (
             /* Mode 3 inputs */
             <div className={styles.crud__formGroup}>
-              <label className={styles.crud__label}>Nhập danh sách đường dẫn video/photo (mỗi dòng một đường dẫn)</label>
+              <label htmlFor="mode-3-video-urls" className={styles.crud__label}>
+                Nhập danh sách đường dẫn video/photo (mỗi dòng một đường dẫn)
+              </label>
               <textarea
-                placeholder="Ví dụ:&#13;https://www.tiktok.com/@username/video/7342674918731517190&#13;https://www.tiktok.com/@username/photo/7655493253176823048"
+                id="mode-3-video-urls"
+                placeholder={"Ví dụ:\nhttps://www.tiktok.com/@username/video/7342674918731517190\n[https://www.tiktok.com/@username/photo/7655493253176823048](https://www.tiktok.com/@username/photo/7655493253176823048)"}
                 value={bulkUrls}
                 onChange={(e) => setBulkUrls(e.target.value)}
-                className={styles.crud__textarea}
-                style={{ minHeight: "180px", fontFamily: "monospace", fontSize: "13px" }}
+                className={`${styles.crud__textarea} ${localStyles.urlListTextarea}`}
                 disabled={loading}
+                spellCheck={false}
               />
+              <p className={localStyles.urlListHint} aria-live="polite">
+                {detectedBulkUrls.length > 0
+                  ? `Đã nhận diện ${detectedBulkUrls.length} đường dẫn duy nhất; link trùng sẽ tự động được bỏ qua.`
+                  : "Có thể dán link thường hoặc danh sách link Markdown."}
+              </p>
             </div>
           )}
 

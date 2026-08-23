@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import styles from "./ProductCard.module.scss";
 import { Product } from "@/types";
-import { getAssetUrl, getProductRedirectUrl, API_BASE } from "@/lib/api";
+import { getAssetUrl, getProductRedirectUrl } from "@/lib/api";
 
 interface ProductCardProps {
   product: Product;
@@ -35,14 +35,18 @@ function formatNumber(num: number | null | undefined): string {
 
 export default function ProductCard({ product, index }: ProductCardProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [imgSrc, setImgSrc] = useState<string | null>(getAssetUrl(product.imageUrl));
+  const tiktokCoverUrl = product.tiktokVideoUrl
+    ? `/api/products/tiktok-cover?url=${encodeURIComponent(product.tiktokVideoUrl)}`
+    : null;
+  const [imgSrc, setImgSrc] = useState<string | null>(
+    tiktokCoverUrl || getAssetUrl(product.imageUrl),
+  );
   const [imgErrorCount, setImgErrorCount] = useState(0);
 
   const handleImgError = () => {
-    if (imgErrorCount === 0 && product.tiktokVideoUrl) {
+    if (imgErrorCount === 0 && tiktokCoverUrl && imgSrc !== tiktokCoverUrl) {
       setImgErrorCount(1);
-      const proxyUrl = `${API_BASE}/products/tiktok-cover?url=${encodeURIComponent(product.tiktokVideoUrl)}`;
-      setImgSrc(proxyUrl);
+      setImgSrc(tiktokCoverUrl);
     } else {
       setImgErrorCount(2);
       setImgSrc(null);
@@ -51,8 +55,9 @@ export default function ProductCard({ product, index }: ProductCardProps) {
 
   const redirectUrl = getProductRedirectUrl(product.slug);
   const tiktokVideoId = getTikTokVideoId(product.tiktokVideoUrl);
-  const isPhotoPost = product.tiktokVideoUrl?.includes('/photo/');
-
+  const tiktokStreamUrl = product.tiktokVideoUrl
+    ? `/api/products/tiktok-video?url=${encodeURIComponent(product.tiktokVideoUrl)}`
+    : null;
   const formatPrice = (price: number | null | undefined): string => {
     if (price === null || price === undefined || price === 0) return "";
     return new Intl.NumberFormat("vi-VN", {
@@ -213,23 +218,22 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             <div className={styles.modal__container}>
               {/* Left Column: Video or Image */}
               <div className={styles.modal__mediaColumn}>
-                {tiktokVideoId ? (
+                {tiktokVideoId && tiktokStreamUrl ? (
                   <div className={styles.modal__videoWrapper}>
-                    <iframe
-                      src={
-                        isPhotoPost
-                          ? `https://www.tiktok.com/embed/v2/${tiktokVideoId}`
-                          : `https://www.tiktok.com/player/v1/${tiktokVideoId}?controls=1&music_info=1&description=1`
-                      }
-                      className={styles.modal__iframe}
-                      allowFullScreen
-                      allow="autoplay; encrypted-media; picture-in-picture"
-                      title={`TikTok review of ${product.name}`}
-                    />
+                    <video
+                      src={tiktokStreamUrl}
+                      poster={imgSrc || undefined}
+                      className={styles.modal__video}
+                      controls
+                      playsInline
+                      preload="metadata"
+                    >
+                      Trình duyệt của bạn không hỗ trợ phát video.
+                    </video>
                   </div>
-                ) : imageUrl ? (
+                ) : imgSrc ? (
                   <div className={styles.modal__imageWrapper}>
-                    <img src={imageUrl} alt={product.name} className={styles.modal__largeImage} />
+                    <img src={imgSrc} alt={product.name} className={styles.modal__largeImage} />
                   </div>
                 ) : (
                   <div className={styles.modal__noMedia}>
@@ -262,7 +266,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 </div>
 
                 <div className={styles.modal__actions}>
-                  {product.tiktokVideoUrl && !tiktokVideoId && (
+                  {product.tiktokVideoUrl && (
                     <a
                       href={product.tiktokVideoUrl}
                       target="_blank"
@@ -270,7 +274,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                       className={styles.modal__secondaryBtn}
                       style={{ marginBottom: "0.5rem" }}
                     >
-                       Xem trên TikTok 📱
+                      Mở video trực tiếp trên TikTok 📱
                     </a>
                   )}
                   <a

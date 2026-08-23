@@ -140,6 +140,55 @@ export class ProductsService {
       where.platform = query.platform;
     }
 
+    const sortOrder: Prisma.SortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
+    let orderBy: Prisma.ProductOrderByWithRelationInput[];
+
+    switch (query.sortBy) {
+      case 'favorite':
+        orderBy = [
+          { isFavorite: sortOrder },
+          { createdAt: 'desc' },
+          { id: 'asc' },
+        ];
+        break;
+      case 'name':
+        orderBy = [{ name: sortOrder }, { id: 'asc' }];
+        break;
+      case 'brand':
+        orderBy = [
+          { brand: { sort: sortOrder, nulls: 'last' } },
+          { id: 'asc' },
+        ];
+        break;
+      case 'price':
+        orderBy = [
+          { price: { sort: sortOrder, nulls: 'last' } },
+          { id: 'asc' },
+        ];
+        break;
+      case 'platform':
+        orderBy = [{ platform: sortOrder }, { id: 'asc' }];
+        break;
+      case 'clicks':
+        orderBy = [
+          { clicks: { _count: sortOrder } },
+          { id: 'asc' },
+        ];
+        break;
+      case 'createdAt':
+        orderBy = [{ createdAt: sortOrder }, { id: 'asc' }];
+        break;
+      case 'isActive':
+        orderBy = [{ isActive: sortOrder }, { id: 'asc' }];
+        break;
+      default:
+        orderBy = [
+          { isFavorite: 'desc' },
+          { createdAt: 'desc' },
+          { id: 'asc' },
+        ];
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
@@ -147,10 +196,7 @@ export class ProductsService {
           category: true,
           _count: { select: { clicks: true } },
         },
-        orderBy: [
-          { isFavorite: 'desc' },
-          { createdAt: 'desc' },
-        ],
+        orderBy,
         skip,
         take: limit,
       }),
@@ -178,6 +224,35 @@ export class ProductsService {
     }
 
     return product;
+  }
+
+  private extractTikTokUrls(value: string): string[] {
+    if (!value) return [];
+
+    const matches = value.match(
+      /https?:\/\/(?:[a-z0-9-]+\.)*tiktok\.com\/[^\s<>"'[\](){}]+/gi,
+    ) || [];
+
+    return Array.from(new Set(
+      matches.map(url => url.replace(/[.,;:!?]+$/, '')),
+    ));
+  }
+
+  private getTikTokVideoId(value: string): string | null {
+    return value.match(/\/(?:video|photo)\/(\d+)/)?.[1] || null;
+  }
+
+  private normalizeTikTokVideoUrl(value: string): string {
+    const extractedUrl = this.extractTikTokUrls(value)[0] || value.trim();
+
+    try {
+      const parsedUrl = new URL(extractedUrl);
+      parsedUrl.search = '';
+      parsedUrl.hash = '';
+      return parsedUrl.toString().replace(/\/$/, '');
+    } catch {
+      return extractedUrl;
+    }
   }
 
   private async resolveTikTokUrl(url: string): Promise<string> {
@@ -441,7 +516,11 @@ export class ProductsService {
       if (!dto.videoUrls || dto.videoUrls.length === 0) {
         throw new BadRequestException('Vui lòng cung cấp ít nhất một link video');
       }
-      urls = dto.videoUrls.filter(u => u && u.trim().length > 0);
+      urls = Array.from(new Set(
+        dto.videoUrls.flatMap(value =>
+          typeof value === 'string' ? this.extractTikTokUrls(value) : [],
+        ),
+      ));
     }
 
     if (urls.length === 0) {
@@ -450,6 +529,7 @@ export class ProductsService {
 
     const createdProducts = [];
     const errors = [];
+    const processedVideoIds = new Set<string>();
 
     // Get default category to assign
     let defaultCategory = await this.prisma.category.findFirst();
@@ -461,18 +541,64 @@ export class ProductsService {
 
     for (const videoUrl of urls) {
       try {
-        const fullUrl = await this.resolveTikTokUrl(videoUrl);
-        const videoId = fullUrl.match(/\/(?:video|photo)\/(\d+)/)?.[1];
+        const resolvedUrl = await this.resolveTikTokUrl(videoUrl);
+        const fullUrl = this.normalizeTikTokVideoUrl(resolvedUrl);
+        const videoId = this.getTikTokVideoId(fullUrl);
         if (!videoId) {
           errors.push({ url: videoUrl, error: 'Không thể phân tách Video ID' });
           continue;
         }
 
-        // Check if product with this video ID already exists to prevent duplicate creation
-        const existing = await this.prisma.product.findFirst({
-          where: { tiktokVideoUrl: { contains: videoId } }
+        if (processedVideoIds.has(videoId)) {
+          continue;
+        }
+        processedVideoIds.add(videoId);
+
+        const slug = `tiktok-${videoId}`;
+
+        // A legacy scan could store several pasted URLs in one field. Only treat a
+        // candidate as the same product when that field represents one video.
+        const candidates = await this.prisma.product.findMany({
+          where: { tiktokVideoUrl: { contains: videoId } },
+          include: { category: true },
         });
+        let existing = candidates.find(product => {
+          const storedUrls = this.extractTikTokUrls(product.tiktokVideoUrl || '');
+          return storedUrls.length === 1 && this.getTikTokVideoId(storedUrls[0]) === videoId;
+        });
+
+        if (!existing) {
+          const slugProduct = await this.prisma.product.findUnique({
+            where: { slug },
+            include: { category: true },
+          });
+          const slugProductUrls = this.extractTikTokUrls(slugProduct?.tiktokVideoUrl || '');
+          if (slugProductUrls.some(url => this.getTikTokVideoId(url) === videoId)) {
+            existing = slugProduct || undefined;
+          }
+        }
+
         if (existing) {
+          const storedUrls = this.extractTikTokUrls(existing.tiktokVideoUrl || '');
+          const shouldRepairStoredUrl = existing.slug === slug && (
+            storedUrls.length !== 1 || existing.tiktokVideoUrl?.trim() !== storedUrls[0]
+          );
+
+          if (shouldRepairStoredUrl) {
+            const affiliateUrls = this.extractTikTokUrls(existing.affiliateUrl);
+            const shouldRepairAffiliateUrl = affiliateUrls.length > 1 || (
+              affiliateUrls.length === 1 && existing.affiliateUrl.trim() !== affiliateUrls[0]
+            );
+            existing = await this.prisma.product.update({
+              where: { id: existing.id },
+              data: {
+                tiktokVideoUrl: fullUrl,
+                ...(shouldRepairAffiliateUrl && { affiliateUrl: fullUrl }),
+              },
+              include: { category: true },
+            });
+          }
+
           if (this.shouldRefreshTikTokThumbnail(existing.imageUrl)) {
             const refreshedThumbnail = await this.fetchTikTokThumbnail(fullUrl);
             if (refreshedThumbnail && refreshedThumbnail !== existing.imageUrl) {
@@ -508,8 +634,6 @@ export class ProductsService {
           cleanedName = cleanedName.substring(0, 80) + '...';
         }
 
-        const slug = `tiktok-${videoId}`;
-
         // Double check slug conflict
         const slugExists = await this.prisma.product.findUnique({ where: { slug } });
         const finalSlug = slugExists ? `${slug}-${Math.floor(Math.random() * 1000)}` : slug;
@@ -540,16 +664,53 @@ export class ProductsService {
       }
     }
 
+    const uniqueProducts = Array.from(
+      new Map(createdProducts.map(product => [product.id, product])).values(),
+    );
+
     return {
       success: true,
-      scannedCount: urls.length,
-      createdCount: createdProducts.length,
-      products: createdProducts,
+      scannedCount: processedVideoIds.size,
+      createdCount: uniqueProducts.length,
+      products: uniqueProducts,
       errors: errors
     };
   }
 
   private coverCache = new Map<string, { url: string; expiresAt: number }>();
+  private videoCache = new Map<string, { url: string; expiresAt: number }>();
+
+  async getTikTokVideoStreamUrl(tiktokUrl: string): Promise<string | null> {
+    if (!tiktokUrl) return null;
+
+    const cached = this.videoCache.get(tiktokUrl);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.url;
+    }
+
+    try {
+      const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(tiktokUrl)}`;
+      const response = await fetch(apiUrl, {
+        headers: this.getTikTokHeaders(),
+      });
+      if (!response.ok) return null;
+
+      const payload = await response.json() as {
+        code?: number;
+        data?: { play?: string };
+      };
+      const playUrl = payload.code === 0 ? payload.data?.play : null;
+      if (!playUrl) return null;
+
+      this.videoCache.set(tiktokUrl, {
+        url: playUrl,
+        expiresAt: Date.now() + 20 * 60 * 1000,
+      });
+      return playUrl;
+    } catch {
+      return null;
+    }
+  }
 
   async getFreshTikTokCover(tiktokUrl: string): Promise<string | null> {
     if (!tiktokUrl) return null;

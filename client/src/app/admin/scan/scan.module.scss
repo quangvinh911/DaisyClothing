@@ -37,49 +37,16 @@
   }
 }
 
-.urlInputRow {
-  display: flex;
-  gap: $space-sm;
-  align-items: center;
-  margin-bottom: $space-xs;
-
-  input {
-    flex-grow: 1;
-  }
+.urlListTextarea {
+  min-height: 200px;
+  font-family: monospace;
+  font-size: 13px;
 }
 
-.btnRemove {
-  background: none;
-  border: none;
-  font-size: $font-size-md;
-  color: #ff5722;
-  cursor: pointer;
-  padding: 4px;
-  @include flex-center;
-  transition: opacity $transition-fast;
-
-  &:hover {
-    opacity: 0.8;
-  }
-}
-
-.btnAddMore {
-  align-self: flex-start;
-  background: none;
-  border: 1px dashed $color-gold;
-  color: $color-gold;
-  font-family: $font-body;
+.urlListHint {
+  margin: 0;
+  color: $color-gray-light;
   font-size: $font-size-xs;
-  font-weight: $font-weight-semibold;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: $space-xs;
-  transition: all $transition-fast;
-
-  &:hover {
-    background-color: rgba($color-gold, 0.05);
-  }
 }
 
 .loadingArea {

@@ -69,6 +69,11 @@
   }
 
   // CRUD Table
+  &__tableWrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+
   &__table {
     width: 100%;
     border-collapse: collapse;
@@ -93,6 +98,50 @@
     tbody tr:hover {
       background-color: #fafaf9;
     }
+  }
+
+  &__sortButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    font-weight: inherit;
+    text-align: left;
+    text-transform: inherit;
+    white-space: nowrap;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: $color-gold;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $color-gold;
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    &--centered {
+      justify-content: center;
+    }
+  }
+
+  &__sortIndicator {
+    min-width: 10px;
+    color: $color-gold;
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  &__tableStatus {
+    margin: $space-sm 0 0;
+    color: $color-gray-light;
+    font-size: $font-size-xs;
   }
 
   &__statusBadge {
