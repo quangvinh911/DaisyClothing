@@ -2,6 +2,51 @@
 
 This file provides quick reference commands and guidelines for building, running, and developing the DaisyDaily application.
 
+## Task Sizing & Execution Policy
+
+Before starting implementation, classify the request using the smallest reasonable tier. Base the tier on affected systems, risk, and uncertainty rather than line count alone. Time targets are guidelines, not guarantees.
+
+### Small Tasks
+
+Typical scope: a clear, low-risk change in 1–3 files with no schema, authentication, deployment, or architectural impact.
+
+* Aim to complete within **3–5 minutes**.
+* Do not use sub-agents unless they clearly reduce elapsed time.
+* Inspect only directly relevant files.
+* Implement the minimum correct change and avoid unrelated cleanup.
+* Run one targeted verification pass, such as linting the changed file or running the narrowest relevant test.
+* Do not run full builds, browser QA, broad audits, or service restarts unless the change specifically requires them.
+
+### Medium Tasks
+
+Typical scope: several related files, one frontend/backend boundary, a contained API change, or moderate behavioral risk.
+
+* Aim to complete within **5–15 minutes**.
+* Use a short plan with only the necessary implementation and verification steps.
+* Use at most one focused sub-agent when there is genuinely independent work that saves time.
+* Inspect the touched flow end-to-end, but avoid repository-wide audits.
+* Run focused checks for each changed surface and one integration or build check when the boundary requires it.
+* Restart services only when the running process must load newly compiled code or live verification is necessary.
+
+### Large or Complex Tasks
+
+Typical scope: architecture changes, database migrations, authentication/security work, deployment, broad refactors, multiple integrations, or high uncertainty.
+
+* Create an explicit staged plan before implementation.
+* Use parallel sub-agents for independent research, implementation, or verification tracks when they materially reduce elapsed time.
+* Provide concise progress updates at meaningful milestones.
+* Validate in proportion to risk, including relevant builds, tests, migrations, integration checks, and rollback considerations.
+* Do not impose an arbitrary short deadline; prioritize correctness while avoiding redundant investigation and repeated checks.
+
+### Universal Guardrails
+
+* Start at the smallest plausible tier. If discovery requires a larger tier, briefly state the concrete reason before expanding the work.
+* If the user describes a task as simple, treat it as small unless a specific technical or safety constraint requires otherwise.
+* Do not add optional features, cleanup, audits, or refactors that are not needed for the requested outcome.
+* Use sub-agents only when parallelism is likely to save wall-clock time; delegation is not a default requirement.
+* Run the narrowest sufficient verification. Do not repeat successful builds or tests without a concrete reason.
+* Stop when the requested outcome is implemented and adequately verified.
+
 ## Quick Start Commands
 
 ### Running Locally
