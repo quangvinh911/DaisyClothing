@@ -5,7 +5,7 @@ import { CreateProductDto, UpdateProductDto, ProductQueryDto } from './dto/produ
 import { generateSlug, buildPaginationMeta } from '../common/utils/helpers';
 import { PaginatedResponse } from '../common/dto/pagination.dto';
 import { mkdir, readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve } from 'path';
 
 @Injectable()
 export class ProductsService {
@@ -726,7 +726,7 @@ export class ProductsService {
 
   private async loadTikTokCoverImage(tiktokUrl: string, videoId: string) {
     // A post's cover is stable; retain the bytes instead of an expiring CDN URL.
-    const directory = join(process.cwd(), process.env.UPLOAD_DIR || 'uploads', 'tiktok-covers');
+    const directory = resolve(process.env.UPLOAD_DIR || 'uploads', 'tiktok-covers');
     const cachePath = join(directory, `${videoId}.json`);
     try {
       const cached = JSON.parse(await readFile(cachePath, 'utf8')) as {
