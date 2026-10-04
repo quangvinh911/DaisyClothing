@@ -322,15 +322,8 @@ export class ProductsService {
     const primary = await this.fetchTikTokOEmbed(videoUrl);
     if (primary?.title?.trim() && primary.thumbnail_url) return primary;
     try {
-      const response = await fetch(
-        `https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}`,
-        { headers: this.getTikTokHeaders(), signal: AbortSignal.timeout(15000) },
-      );
-      if (response.ok) {
-        const payload = await response.json() as {
-          code?: number;
-          data?: { title?: string; cover?: string; origin_cover?: string; images?: string[] };
-        };
+      const payload = await this.fetchTikwmData(videoUrl);
+      if (payload) {
         if (payload.code === 0 && payload.data) {
           return {
             ...primary,
@@ -344,6 +337,36 @@ export class ProductsService {
       // Let the scan report missing metadata instead of inventing product details.
     }
     return primary;
+  }
+
+  private tikwmQueue: Promise<void> = Promise.resolve();
+  private tikwmNextRequestAt = 0;
+
+  private async fetchTikwmData(videoUrl: string) {
+    const previous = this.tikwmQueue;
+    let release: () => void;
+    this.tikwmQueue = new Promise<void>(resolve => { release = resolve; });
+    await previous;
+    try {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const delay = this.tikwmNextRequestAt - Date.now();
+        if (delay > 0) await new Promise(resolve => setTimeout(resolve, delay));
+        this.tikwmNextRequestAt = Date.now() + 1200;
+        const response = await fetch(
+          `https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}`,
+          { headers: this.getTikTokHeaders(), signal: AbortSignal.timeout(15000) },
+        );
+        if (!response.ok) return null;
+        const payload = await response.json() as {
+          code?: number; msg?: string;
+          data?: { title?: string; cover?: string; origin_cover?: string; images?: string[]; play?: string };
+        };
+        if (payload.code === 0 || !/limit/i.test(payload.msg || '')) return payload;
+      }
+      return null;
+    } finally {
+      release!();
+    }
   }
 
   private getTikTokProductName(caption: string): string {
@@ -629,24 +652,26 @@ export class ProductsService {
           }
 
           const shouldRepairName = /^Sản phẩm review #\d+$/.test(existing.name);
+          const shouldRepairDescription = /^Sản phẩm review #\d+$/.test(existing.description?.trim() || '');
           const shouldRefreshImage = this.shouldRefreshTikTokThumbnail(existing.imageUrl);
-          if (shouldRepairName || shouldRefreshImage) {
+          if (shouldRepairName || shouldRepairDescription || shouldRefreshImage) {
             const metadata = await this.fetchTikTokMetadata(fullUrl);
             const caption = metadata?.title?.trim();
             const thumbnail = metadata?.thumbnail_url;
-            if ((shouldRepairName && caption) || (shouldRefreshImage && thumbnail)) {
+            if (((shouldRepairName || shouldRepairDescription) && caption) || (shouldRefreshImage && thumbnail)) {
               existing = await this.prisma.product.update({
                 where: { id: existing.id },
                 data: {
                   ...(shouldRepairName && caption && {
-                    name: this.getTikTokProductName(caption), description: caption,
+                    name: this.getTikTokProductName(caption),
                   }),
+                  ...(shouldRepairDescription && caption && { description: caption }),
                   ...(shouldRefreshImage && thumbnail && { imageUrl: thumbnail }),
                 },
                 include: { category: true },
               });
             }
-            if ((shouldRepairName && !caption) || (shouldRefreshImage && !thumbnail)) {
+            if (((shouldRepairName || shouldRepairDescription) && !caption) || (shouldRefreshImage && !thumbnail)) {
               errors.push({ url: videoUrl, error: 'TikTok chưa trả đủ caption/thumbnail để sửa sản phẩm. Vui lòng thử lại hoặc chỉnh sửa thủ công.' });
             }
           }
@@ -780,17 +805,8 @@ export class ProductsService {
     }
 
     try {
-      const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(tiktokUrl)}`;
-      const response = await fetch(apiUrl, {
-        headers: this.getTikTokHeaders(),
-      });
-      if (!response.ok) return null;
-
-      const payload = await response.json() as {
-        code?: number;
-        data?: { play?: string };
-      };
-      const playUrl = payload.code === 0 ? payload.data?.play : null;
+      const payload = await this.fetchTikwmData(tiktokUrl);
+      const playUrl = payload?.code === 0 ? payload.data?.play : null;
       if (!playUrl) return null;
 
       this.videoCache.set(tiktokUrl, {
