@@ -296,6 +296,7 @@ export class ProductsService {
       const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(targetUrl)}`;
       const res = await fetch(oembedUrl, {
         headers: this.getTikTokHeaders(),
+        signal: AbortSignal.timeout(15000),
       });
       if (res.ok) {
         return (await res.json()) as {
@@ -311,8 +312,41 @@ export class ProductsService {
   }
 
   private async fetchTikTokThumbnail(videoUrl: string): Promise<string | null> {
-    const oembed = await this.fetchTikTokOEmbed(videoUrl);
+    const oembed = await this.fetchTikTokMetadata(videoUrl);
     return oembed?.thumbnail_url || null;
+  }
+
+  private async fetchTikTokMetadata(videoUrl: string) {
+    const primary = await this.fetchTikTokOEmbed(videoUrl);
+    if (primary?.title?.trim() && primary.thumbnail_url) return primary;
+    try {
+      const response = await fetch(
+        `https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}`,
+        { headers: this.getTikTokHeaders(), signal: AbortSignal.timeout(15000) },
+      );
+      if (response.ok) {
+        const payload = await response.json() as {
+          code?: number;
+          data?: { title?: string; cover?: string; origin_cover?: string; images?: string[] };
+        };
+        if (payload.code === 0 && payload.data) {
+          return {
+            ...primary,
+            title: primary?.title?.trim() || payload.data.title?.trim(),
+            thumbnail_url: primary?.thumbnail_url || payload.data.cover ||
+              payload.data.origin_cover || payload.data.images?.[0],
+          };
+        }
+      }
+    } catch {
+      // Let the scan report missing metadata instead of inventing product details.
+    }
+    return primary;
+  }
+
+  private getTikTokProductName(caption: string): string {
+    const name = caption.replace(/#[^\s#]+/gu, '').replace(/\s+/g, ' ').trim() || caption.trim();
+    return name.length > 80 ? `${name.slice(0, 80)}...` : name;
   }
 
   private shouldRefreshTikTokThumbnail(imageUrl?: string | null): boolean {
@@ -496,14 +530,7 @@ export class ProductsService {
         }
         
         if (foundUrls.length === 0) {
-          // Mock fallback for demo if blocked by Captcha/IP restrictions
-          const username = targetUsername || 'creator';
-          console.warn(`No video links found in profile page HTML for @${username}. Falling back to mock demo videos.`);
-          foundUrls = [
-            `https://www.tiktok.com/@${username}/video/7342674918731517190`,
-            `https://www.tiktok.com/@${username}/video/7342674918731517191`,
-            `https://www.tiktok.com/@${username}/video/7342674918731517192`
-          ];
+          throw new BadRequestException('Không lấy được video từ kênh TikTok. Vui lòng nhập trực tiếp link video/photo.');
         }
 
         const limit = dto.count && dto.count > 0 ? dto.count : foundUrls.length;
@@ -599,40 +626,40 @@ export class ProductsService {
             });
           }
 
-          if (this.shouldRefreshTikTokThumbnail(existing.imageUrl)) {
-            const refreshedThumbnail = await this.fetchTikTokThumbnail(fullUrl);
-            if (refreshedThumbnail && refreshedThumbnail !== existing.imageUrl) {
-              const refreshedProduct = await this.prisma.product.update({
+          const shouldRepairName = /^Sản phẩm review #\d+$/.test(existing.name);
+          const shouldRefreshImage = this.shouldRefreshTikTokThumbnail(existing.imageUrl);
+          if (shouldRepairName || shouldRefreshImage) {
+            const metadata = await this.fetchTikTokMetadata(fullUrl);
+            const caption = metadata?.title?.trim();
+            const thumbnail = metadata?.thumbnail_url;
+            if ((shouldRepairName && caption) || (shouldRefreshImage && thumbnail)) {
+              existing = await this.prisma.product.update({
                 where: { id: existing.id },
-                data: { imageUrl: refreshedThumbnail },
+                data: {
+                  ...(shouldRepairName && caption && {
+                    name: this.getTikTokProductName(caption), description: caption,
+                  }),
+                  ...(shouldRefreshImage && thumbnail && { imageUrl: thumbnail }),
+                },
                 include: { category: true },
               });
-              createdProducts.push(refreshedProduct);
-            } else {
-              createdProducts.push(existing);
             }
-          } else {
-            createdProducts.push(existing);
+            if ((shouldRepairName && !caption) || (shouldRefreshImage && !thumbnail)) {
+              errors.push({ url: videoUrl, error: 'TikTok chưa trả đủ caption/thumbnail để sửa sản phẩm. Vui lòng thử lại hoặc chỉnh sửa thủ công.' });
+            }
           }
+          createdProducts.push(existing);
           continue;
         }
 
-        // Fetch oEmbed details from TikTok (using /video/ URL structure even for photo slide posts)
-        const oembedData = await this.fetchTikTokOEmbed(fullUrl);
-        let title = `Sản phẩm review #${videoId}`;
-        let imageUrl = '';
-        let brand = '';
-
-        if (oembedData) {
-          title = oembedData.title || title;
-          imageUrl = oembedData.thumbnail_url || '';
-          brand = oembedData.author_name || '';
+        const metadata = await this.fetchTikTokMetadata(fullUrl);
+        const title = metadata?.title?.trim();
+        const imageUrl = metadata?.thumbnail_url;
+        if (!title || !imageUrl) {
+          errors.push({ url: videoUrl, error: 'Không lấy được caption hoặc thumbnail TikTok. Chưa tạo sản phẩm; vui lòng thử lại hoặc thêm thủ công.' });
+          continue;
         }
-
-        let cleanedName = title.trim();
-        if (cleanedName.length > 80) {
-          cleanedName = cleanedName.substring(0, 80) + '...';
-        }
+        const cleanedName = this.getTikTokProductName(title);
 
         // Double check slug conflict
         const slugExists = await this.prisma.product.findUnique({ where: { slug } });
@@ -721,12 +748,7 @@ export class ProductsService {
     }
 
     try {
-      const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(tiktokUrl)}`;
-      const res = await fetch(oembedUrl, {
-        headers: this.getTikTokHeaders(),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
+      const data = await this.fetchTikTokMetadata(tiktokUrl);
       if (data && data.thumbnail_url) {
         this.coverCache.set(tiktokUrl, {
           url: data.thumbnail_url,
