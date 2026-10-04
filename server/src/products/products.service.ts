@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto, UpdateProductDto, ProductQueryDto } from './dto/product.dto';
 import { generateSlug, buildPaginationMeta } from '../common/utils/helpers';
 import { PaginatedResponse } from '../common/dto/pagination.dto';
+import { mkdir, readFile, writeFile } from 'fs/promises';
+import { join } from 'path';
 
 @Injectable()
 export class ProductsService {
@@ -705,7 +707,69 @@ export class ProductsService {
   }
 
   private coverCache = new Map<string, { url: string; expiresAt: number }>();
+  private coverRequests = new Map<string, Promise<{ buffer: Buffer; contentType: string } | null>>();
   private videoCache = new Map<string, { url: string; expiresAt: number }>();
+
+  async getTikTokCoverImage(tiktokUrl: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+    const videoId = this.getTikTokVideoId(tiktokUrl);
+    if (!videoId) return null;
+    const pending = this.coverRequests.get(videoId);
+    if (pending) return pending;
+    const request = this.loadTikTokCoverImage(tiktokUrl, videoId);
+    this.coverRequests.set(videoId, request);
+    try {
+      return await request;
+    } finally {
+      this.coverRequests.delete(videoId);
+    }
+  }
+
+  private async loadTikTokCoverImage(tiktokUrl: string, videoId: string) {
+    // A post's cover is stable; retain the bytes instead of an expiring CDN URL.
+    const directory = join(process.cwd(), process.env.UPLOAD_DIR || 'uploads', 'tiktok-covers');
+    const cachePath = join(directory, `${videoId}.json`);
+    try {
+      const cached = JSON.parse(await readFile(cachePath, 'utf8')) as {
+        contentType: string; data: string;
+      };
+      if (cached.contentType?.startsWith('image/') && cached.data) {
+        return { buffer: Buffer.from(cached.data, 'base64'), contentType: cached.contentType };
+      }
+    } catch {
+      // First request, or an incomplete cache file: fetch a usable cover below.
+    }
+
+    const product = await this.prisma.product.findFirst({
+      where: { tiktokVideoUrl: tiktokUrl }, select: { imageUrl: true },
+    });
+    const download = async (url?: string | null) => {
+      if (!url || !/^https?:\/\//i.test(url)) return null;
+      try {
+        const response = await fetch(url, {
+          headers: { ...this.getTikTokHeaders(), Accept: 'image/*' },
+          signal: AbortSignal.timeout(10000),
+        });
+        const contentType = response.headers.get('content-type')?.split(';')[0];
+        if (!response.ok || !contentType?.startsWith('image/')) return null;
+        const buffer = Buffer.from(await response.arrayBuffer());
+        return buffer.length ? { buffer, contentType } : null;
+      } catch {
+        return null;
+      }
+    };
+    let image = await download(product?.imageUrl);
+    if (!image) image = await download(await this.getFreshTikTokCover(tiktokUrl));
+    if (!image) return null;
+    try {
+      await mkdir(directory, { recursive: true });
+      await writeFile(cachePath, JSON.stringify({
+        contentType: image.contentType, data: image.buffer.toString('base64'),
+      }));
+    } catch {
+      // Serve the fetched image even if the disk cache cannot be written.
+    }
+    return image;
+  }
 
   async getTikTokVideoStreamUrl(tiktokUrl: string): Promise<string | null> {
     if (!tiktokUrl) return null;

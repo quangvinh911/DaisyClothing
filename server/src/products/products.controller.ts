@@ -43,27 +43,13 @@ export class ProductsController {
     if (!tiktokUrl) {
       return res.status(400).send('Missing url parameter');
     }
-    const freshUrl = await this.productsService.getFreshTikTokCover(tiktokUrl);
-    if (freshUrl) {
-      try {
-        const imageResponse = await fetch(freshUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-          },
-        });
-
-        if (imageResponse.ok) {
-          const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
-          const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-          res.setHeader('Content-Type', contentType);
-          res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=21600, stale-while-revalidate=86400');
-          return res.status(200).send(imageBuffer);
-        }
-      } catch {
-        // TikTok may be temporarily unavailable; return the normal not-found response.
-      }
+    const image = await this.productsService.getTikTokCoverImage(tiktokUrl);
+    if (image) {
+      res.setHeader('Content-Type', image.contentType);
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=21600, stale-while-revalidate=86400');
+      return res.status(200).send(image.buffer);
     }
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(404).send('Cover not found');
   }
 
